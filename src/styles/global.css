@@ -658,6 +658,33 @@ h3,
   flex-shrink: 0;
 }
 
+/* Right column: stack confidence + blow panels vertically */
+.play-grid-right {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  min-height: 0;
+}
+
+/* Blow intensity bar — warm amber, distinct from confidence cyan */
+.conf-bar-fill--blow {
+  background: #4a3318;
+  transition: width 80ms ease-out, background 120ms ease;
+}
+
+.conf-bar-fill--blow.active {
+  background: linear-gradient(to right, #ffb347, #ffd580);
+}
+
+.blow-disabled-hint {
+  font-family: 'Space Grotesk', sans-serif;
+  font-size: 10px;
+  letter-spacing: 2px;
+  color: #555;
+  text-align: center;
+  padding-top: 4px;
+}
+
 .controls-row {
   display: grid;
   grid-template-columns: 140px 160px 1fr;

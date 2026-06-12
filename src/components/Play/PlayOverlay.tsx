@@ -8,6 +8,7 @@ import { usePerformanceStats } from '../../hooks/usePerformanceStats';
 import { MobileGate } from '../MobileGate';
 import { GradientText } from '../ui/GradientText';
 import DecryptedText from '../ui/DecryptedText';
+import { BlowIntensityPanel } from './BlowIntensityPanel';
 import { ConfidencePanel } from './ConfidencePanel';
 import { ControlsRow } from './ControlsRow';
 import { GestureCanvas } from './GestureCanvas';
@@ -176,7 +177,10 @@ export function PlayOverlay() {
           performanceMetrics={performanceStats.metrics}
           showPerformance={session.isRunning}
         />
-        <ConfidencePanel scores={scores} top={topSwara} noneScore={noneScore} />
+        <div className="play-grid-right">
+          <ConfidencePanel scores={scores} top={topSwara} noneScore={noneScore} />
+          <BlowIntensityPanel intensity={lipTracking.intensity} enabled={lipTracking.enabled} />
+        </div>
       </div>
 
       <ControlsRow
