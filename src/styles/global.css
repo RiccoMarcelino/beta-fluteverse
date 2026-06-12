@@ -672,10 +672,13 @@ h3,
   flex-shrink: 0;
 }
 
-/* Right column: stack confidence + blow panels vertically */
+/* Right column: stack confidence + blow panels and pin one to the top,
+   one to the bottom — the canvas already defines the column height, so
+   space-between distributes the leftover gap evenly between them. */
 .play-grid-right {
   display: flex;
   flex-direction: column;
+  justify-content: space-between;
   gap: 14px;
   min-height: 0;
 }
@@ -698,7 +701,7 @@ h3,
 
 .controls-row {
   display: grid;
-  grid-template-columns: 140px 160px 1fr;
+  grid-template-columns: 1fr 1fr 1fr;
   gap: 16px;
 }
 
@@ -1105,7 +1108,7 @@ h3,
    over whatever section is in view so the entry point is always reachable. */
 .roadmap-link {
   position: fixed;
-  left: 32px;
+  right: 32px;
   bottom: 32px;
   z-index: 40;
   background: transparent;
@@ -1133,7 +1136,7 @@ h3,
 
 @media (max-width: 768px) {
   .roadmap-link {
-    left: 20px;
+    right: 20px;
     bottom: 20px;
     font-size: 12px;
   }
