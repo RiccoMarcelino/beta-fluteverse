@@ -666,21 +666,18 @@ h3,
   min-height: 0;
 }
 
-/* Blow intensity bar — warm amber, distinct from confidence cyan */
+/* Blow intensity bar — reuses gesture-confidence cyan from the design system,
+   but overrides the transition so it tracks lipTracking's per-frame updates
+   instead of lagging behind. */
 .conf-bar-fill--blow {
-  background: #4a3318;
-  transition: width 80ms ease-out, background 120ms ease;
-}
-
-.conf-bar-fill--blow.active {
-  background: linear-gradient(to right, #ffb347, #ffd580);
+  transition: width 30ms linear, background 120ms ease;
 }
 
 .blow-disabled-hint {
   font-family: 'Space Grotesk', sans-serif;
   font-size: 10px;
   letter-spacing: 2px;
-  color: #555;
+  color: var(--muted);
   text-align: center;
   padding-top: 4px;
 }
