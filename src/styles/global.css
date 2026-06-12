@@ -190,7 +190,7 @@ h3,
 .horizontal-track {
   display: flex;
   flex-direction: row;
-  width: 300vw;
+  width: 200vw;
   height: 100vh;
 }
 
@@ -1080,11 +1080,63 @@ h3,
   transition: fill 0.4s ease;
 }
 
-/* ROADMAP */
-#roadmap {
-  position: relative;
-  overflow-x: auto;
-  overflow-y: hidden;
+/* ROADMAP — now a fullscreen overlay reached via the bottom-left link,
+   not a horizontal-scroll section. */
+#roadmap-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 50;
+  background: var(--black);
+  overflow-y: auto;
+  overflow-x: hidden;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 320ms ease;
+  display: flex;
+  flex-direction: column;
+}
+
+#roadmap-overlay.visible {
+  opacity: 1;
+  pointer-events: auto;
+}
+
+/* Bottom-left page link — mirrors .nav a from the topbar. Stays fixed
+   over whatever section is in view so the entry point is always reachable. */
+.roadmap-link {
+  position: fixed;
+  left: 32px;
+  bottom: 32px;
+  z-index: 40;
+  background: transparent;
+  border: none;
+  padding: 0;
+  font-family: 'Doto', monospace;
+  font-weight: 600;
+  font-size: 14px;
+  letter-spacing: 2px;
+  text-transform: uppercase;
+  color: var(--cream);
+  text-decoration: underline;
+  text-underline-offset: 4px;
+  cursor: pointer;
+}
+
+.roadmap-link:hover {
+  color: var(--cyan-solid);
+}
+
+.roadmap-link:focus-visible {
+  outline: 1px solid var(--cyan-solid);
+  outline-offset: 4px;
+}
+
+@media (max-width: 768px) {
+  .roadmap-link {
+    left: 20px;
+    bottom: 20px;
+    font-size: 12px;
+  }
 }
 
 #floating-lines-container {

@@ -14,6 +14,9 @@ interface FluteApi {
   confirmPlay(mode: AudioMode): void;
   cancelPending(): void;
   audioMode: AudioMode;
+  roadmapOpen: boolean;
+  openRoadmap(): void;
+  closeRoadmap(): void;
 }
 
 const FluteCtx = createContext<FluteApi | null>(null);
@@ -29,6 +32,7 @@ export function FluteProvider({ children }: { children: ReactNode }) {
   const [playOpen, setPlayOpen]     = useState(false);
   const [pendingKey, setPendingKey] = useState<FluteKey | null>(null);
   const [audioMode, setAudioMode]   = useState<AudioMode>('synthetic');
+  const [roadmapOpen, setRoadmapOpen] = useState(false);
 
   return (
     <FluteCtx.Provider
@@ -53,6 +57,13 @@ export function FluteProvider({ children }: { children: ReactNode }) {
         },
         closePlay() {
           setPlayOpen(false);
+        },
+        roadmapOpen,
+        openRoadmap() {
+          setRoadmapOpen(true);
+        },
+        closeRoadmap() {
+          setRoadmapOpen(false);
         },
       }}
     >

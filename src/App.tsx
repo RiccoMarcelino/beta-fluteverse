@@ -13,6 +13,20 @@ import { useIsMobile } from './hooks/useIsMobile';
 import { getRecognizer } from './gesture/recognizer';
 import { FluteProvider, useFlute } from './state/FluteContext';
 
+function RoadmapLink() {
+  const { openRoadmap } = useFlute();
+  return (
+    <button
+      type="button"
+      className="roadmap-link"
+      onClick={openRoadmap}
+      aria-label="Open roadmap"
+    >
+      ROADMAP
+    </button>
+  );
+}
+
 function Shell() {
   const audio = useAudioEngine('synthetic');
   const isMobile = useIsMobile();
@@ -43,6 +57,7 @@ function Shell() {
     trackRef,
     thumbRef,
     enabled: !isMobile,
+    sectionCount: 2,
   });
 
   return (
@@ -55,7 +70,6 @@ function Shell() {
         <div className="horizontal-track">
           <Hero />
           <Carousel />
-          <Roadmap />
         </div>
       </div>
 
@@ -63,6 +77,10 @@ function Shell() {
         onBrandClick={() => scrollToSection('hero')}
         onNavClick={id => scrollToSection(id)}
       />
+
+      <RoadmapLink />
+
+      <Roadmap />
 
       <PlayOverlay />
 
