@@ -1,0 +1,51 @@
+.perf-stats {
+  position: absolute;
+  top: 12px;
+  left: 12px;
+  background: rgba(0, 0, 0, 0.75);
+  border: 1px solid rgba(0, 255, 224, 0.3);
+  border-radius: 4px;
+  padding: 8px 10px;
+  font-family: 'Space Grotesk', monospace;
+  font-size: 11px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  z-index: 10;
+  backdrop-filter: blur(4px);
+}
+
+.perf-stat {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 12px;
+}
+
+.perf-label {
+  color: #888;
+  font-weight: 600;
+  letter-spacing: 1px;
+  font-size: 9px;
+}
+
+.perf-value {
+  color: #00FFE0;
+  font-weight: 600;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.perf-device {
+  color: #666;
+  font-size: 8px;
+  letter-spacing: 0.5px;
+  padding: 1px 4px;
+  background: rgba(0, 255, 224, 0.1);
+  border-radius: 2px;
+}
+
+.perf-stat:first-child .perf-value {
+  color: #ffffff;
+}

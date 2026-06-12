@@ -1,0 +1,154 @@
+.stepper-outer {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 1rem;
+  width: 100%;
+}
+
+.step-circle-container {
+  margin-left: auto;
+  margin-right: auto;
+  width: 100%;
+  max-width: 32rem;
+  border-radius: 4px;
+  background: #0a0a0a;
+  border: 1px solid #222;
+}
+
+.step-indicator-row {
+  display: flex;
+  width: 100%;
+  align-items: center;
+  padding: 1.5rem 2rem 1rem;
+}
+
+.step-content-default {
+  position: relative;
+  overflow: hidden;
+}
+
+.step-default {
+  padding: 0.5rem 2rem 1rem;
+}
+
+.footer-container {
+  padding: 0 2rem 1.5rem;
+}
+
+.footer-nav {
+  margin-top: 1.5rem;
+  display: flex;
+}
+
+.footer-nav.spread {
+  justify-content: space-between;
+}
+
+.footer-nav.end {
+  justify-content: flex-end;
+}
+
+.stepper-back-btn {
+  transition: all 200ms ease;
+  padding: 6px 16px;
+  color: #666;
+  cursor: pointer;
+  background: transparent;
+  border: 1px solid #333;
+  font-family: 'Bebas Neue', sans-serif;
+  font-size: 16px;
+  letter-spacing: 2px;
+}
+
+.stepper-back-btn:hover {
+  color: #fff;
+  border-color: #666;
+}
+
+.stepper-back-btn.inactive {
+  pointer-events: none;
+  opacity: 0.3;
+}
+
+.stepper-next-btn {
+  transition: all 200ms ease;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: #ffffff;
+  color: #000000;
+  font-family: 'Bebas Neue', sans-serif;
+  font-size: 18px;
+  letter-spacing: 3px;
+  padding: 6px 24px;
+  cursor: pointer;
+  border: 2px solid #fff;
+  box-shadow: 3px 3px 0px #555;
+}
+
+.stepper-next-btn:hover {
+  background: #00FFE0;
+  border-color: #00FFE0;
+  box-shadow: 3px 3px 0px #00FFE0;
+}
+
+.stepper-next-btn:disabled {
+  opacity: 0.3;
+  cursor: not-allowed;
+}
+
+/* Step indicators */
+.step-indicator {
+  position: relative;
+  cursor: pointer;
+  outline: none;
+}
+
+.step-indicator-inner {
+  display: flex;
+  height: 2rem;
+  width: 2rem;
+  align-items: center;
+  justify-content: center;
+  border-radius: 9999px;
+  font-weight: 600;
+}
+
+.active-dot {
+  height: 0.6rem;
+  width: 0.6rem;
+  border-radius: 9999px;
+  background-color: #000;
+}
+
+.step-number {
+  font-size: 0.8rem;
+  font-family: 'Bebas Neue', sans-serif;
+  color: #555;
+}
+
+.step-connector {
+  position: relative;
+  margin-left: 0.5rem;
+  margin-right: 0.5rem;
+  height: 2px;
+  flex: 1;
+  overflow: hidden;
+  border-radius: 1px;
+  background-color: #333;
+}
+
+.step-connector-inner {
+  position: absolute;
+  left: 0;
+  top: 0;
+  height: 100%;
+}
+
+.check-icon {
+  height: 0.9rem;
+  width: 0.9rem;
+  color: #000;
+}

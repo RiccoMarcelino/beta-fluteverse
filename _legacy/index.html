@@ -1,0 +1,195 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>FluteVerse — Gesture Flute</title>
+  <link rel="icon" type="image/png" href="https://zccmrecwlvfqsftmsoxa.supabase.co/storage/v1/object/public/Test/ICON.png">
+
+  <!--
+    ⚠️ IMPORTANT: This application requires a local web server to function properly.
+    
+    CDN scripts and certain browser features don't work with file:// protocol.
+    
+    To run this locally:
+    - Python: python -m http.server 8000
+    - Node.js: npx http-server
+    - VS Code: Install "Live Server" extension and click "Go Live"
+    
+    Then open: http://localhost:8000
+  -->
+
+  <!-- Google Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Space+Grotesk:wght@300;400;600;700&family=Playwrite+AU+VIC+Guides&family=Doto:wght@100..900&display=swap" rel="stylesheet">
+
+  <!-- MediaPipe Tasks Vision -->
+  <script type="module">
+    import { GestureRecognizer, FilesetResolver } from "https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@latest/vision_bundle.mjs";
+    window.GestureRecognizer = GestureRecognizer;
+    window.FilesetResolver = FilesetResolver;
+  </script>
+
+  <!-- Three.js -->
+  <script src="https://unpkg.com/three@0.160.0/build/three.min.js"></script>
+
+
+
+  <!-- GSAP + SplitText -->
+  <script src="https://cdn.jsdelivr.net/npm/gsap@3.12.5/dist/gsap.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/gsap@3.12.5/dist/SplitText.min.js"></script>
+
+
+
+  <link rel="stylesheet" href="styles.css">
+
+</head>
+<body>
+  <div id="loader" aria-live="polite" aria-label="Loading FluteVerse">
+    <div class="loader-inner">
+      <div class="loader-title">FLUTEVERSE</div>
+      <div class="status-text">
+        <span class="status-text__content" id="statusContent">Waking the instrument</span><span class="status-text__cursor" id="statusCursor">|</span>
+      </div>
+      <div class="bar">
+        <div class="bar-fill"></div>
+      </div>
+      <span class="bar-pct">0%</span>
+    </div>
+  </div>
+
+
+  <div class="grain" aria-hidden="true"></div>
+
+  <div class="horizontal-container">
+    <div class="horizontal-track">
+
+      <!-- SECTION 1: Hero -->
+      <section class="section" id="hero">
+        <div id="galaxy-container" style="position: absolute; inset: 0; z-index: 1; pointer-events: none;"></div>
+
+
+        <header class="topbar">
+          <div class="brand" id="brandLogo" style="cursor:pointer;line-height:1;" title="🎵">
+            <canvas id="fuzzyBrandCanvas" style="display:block;"></canvas>
+          </div>
+          <div class="center-kicker">A GESTURE-BASED INSTRUMENT</div>
+          <nav class="nav" aria-label="Primary navigation">
+            <a data-target="carousel">ABOUT</a>
+          </nav>
+        </header>
+
+        <div class="hero-text" id="heroText">
+          <h1 id="heroLine1"><span class="gradient-text-el" data-colors="#ffffff,#00FFE0,#ffffff,#aaaaaa" data-speed="5">PLAY YOUR HANDS.</span></h1>
+          <h1 id="heroLine2"><span class="gradient-text-el" data-colors="#ffffff,#00FFE0,#ffffff,#aaaaaa" data-speed="5">HEAR THE</span>
+            <span class="rotating-text-pill" id="rotatingPill" aria-live="polite">
+              <span class="rotating-text-inner" id="rotatingInner"></span>
+            </span>
+          </h1>
+          <p id="heroSub">Gesture-powered Indian classical music. No instrument required.</p>
+        </div>
+
+        <div class="scroll-cue" style="display:none;"></div>
+
+        <!-- CurvedLoop marquee -->
+        <div id="curved-loop-container" style="position:absolute;bottom:0;left:0;right:0;z-index:4;pointer-events:auto;"></div>
+      </section>
+
+      <!-- SECTION 2: Carousel -->
+      <section class="section" id="carousel">
+        <!-- LightRays background for carousel section -->
+        <div id="light-rays-container" style="position:absolute;inset:0;z-index:1;pointer-events:none;overflow:hidden;"></div>
+        <div class="section-heading">
+          <h2>SELECT YOUR INSTRUMENT</h2>
+          <p id="carouselSubtitle">Choose a flute scale to begin</p>
+        </div>
+        <div class="carousel-wrapper" id="carouselWrapper" aria-label="Flute selector"></div>
+      </section>
+
+      <!-- SECTION 3: Roadmap -->
+      <section class="section" id="roadmap">
+        <!-- FloatingLines background -->
+        <div id="floating-lines-container" style="position:absolute;inset:0;z-index:1;pointer-events:none;"></div>
+        
+        <div class="roadmap-content">
+          <div class="roadmap-header">
+            <h2 class="roadmap-kicker">WHAT'S NEXT</h2>
+            <h1 class="roadmap-title" id="roadmapTitle">ROADMAP</h1>
+            <p class="roadmap-subtitle" id="roadmapSubtitle">Every gesture is just the beginning. Here's what we're building next.</p>
+          </div>
+
+          <div class="roadmap-rail" id="roadmapRail">
+            <!-- Features injected by JS -->
+          </div>
+
+          <div class="roadmap-footer">
+            <div class="roadmap-marquee" id="roadmapMarquee">COMING SOON ✦ IN DEVELOPMENT ✦ FLUTEVERSE ✦ </div>
+          </div>
+        </div>
+      </section>
+
+    </div>
+  </div>
+
+  <!-- PLAY PAGE: full-screen overlay, slides up on card click -->
+  <div id="play-overlay" role="main" aria-label="Play page">
+    <!-- SideRays motion background for C# Flute play section -->
+    <div id="side-rays-container" style="position:absolute;inset:0;z-index:0;pointer-events:none;overflow:hidden;"></div>
+    <div class="play-back-btn" id="backBtn" role="button" tabindex="0">← BACK</div>
+
+    <div class="play-header">
+      <span class="play-title" id="playTitle"><span class="gradient-text-el" data-colors="#ffffff,#00FFE0,#a0a0a0,#ffffff" data-speed="4">C# FLUTE</span></span>
+      <span class="play-subtitle" id="playSubtitle">GESTURE MODE — C# MAJOR SCALE</span>
+    </div>
+
+    <div class="play-grid">
+      <div class="canvas-wrapper">
+        <canvas id="gestureCanvas"></canvas>
+        <div class="canvas-no-hand" id="noHandMsg">
+          <div class="no-hand-inner">
+            <span class="no-hand-line1">CLICK START</span>
+            <span class="no-hand-line2">&amp; RAISE YOUR HAND</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="confidence-panel">
+        <div class="panel-title">GESTURE CONFIDENCE</div>
+        <div class="confidence-rows" id="confidenceRows"></div>
+      </div>
+    </div>
+
+    <div class="controls-row">
+      <div class="control-box">
+        <div class="control-label">CONTROL</div>
+        <button class="brut-btn" id="startBtn" disabled>START</button>
+      </div>
+
+      <div class="control-box">
+        <div class="control-label">COOLDOWN (MS)</div>
+        <input class="brut-input" id="cooldownInput" type="number" value="300" min="100" max="2000" step="50">
+      </div>
+
+      <div class="control-box active-note-box" id="activeNoteBox">
+        <div class="active-note-swara" id="activeSwara">—</div>
+        <div class="active-note-detail" id="activeDetail"></div>
+      </div>
+    </div>
+
+    <div class="swara-strip" id="swaraStrip"></div>
+  </div>
+
+  <!-- Custom horizontal scrollbar -->
+  <div id="custom-scrollbar" aria-hidden="true">
+    <div id="scrollbar-hint">SCROLL HORIZONTALLY</div>
+    <div id="scrollbar-track">
+      <div id="scrollbar-thumb"></div>
+    </div>
+  </div>
+
+  <div class="toast" id="toast" role="status" aria-live="polite"></div>
+
+  <script src="script.js"></script>
+</body>
+</html>

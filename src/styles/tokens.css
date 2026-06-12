@@ -1,0 +1,12 @@
+:root {
+  --black: #000000;
+  --cream: #F0EBE0;
+  --muted: #888888;
+  --line: #222222;
+  --cyan: rgba(0, 255, 224, 0.15);
+  --cyan-solid: #00FFE0;
+
+  /* breakpoints — for reference, used in media queries below */
+  --bp-mobile: 768px;
+  --bp-small: 640px;
+}
