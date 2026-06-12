@@ -142,6 +142,12 @@ h3,
   color: var(--cyan-solid);
   opacity: 1;
   font-weight: 300;
+  animation: cursorBlink 900ms ease-in-out infinite;
+}
+
+@keyframes cursorBlink {
+  0%, 100% { opacity: 1; }
+  50%      { opacity: 0; }
 }
 
 .bar {
