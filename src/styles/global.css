@@ -391,6 +391,14 @@ h3,
               border-color 0.4s ease;
 }
 
+/* Middle 3 cards (D, C#, E) sit slightly spaced apart so the active card
+   has breathing room, while the outer two (C, F) still tuck behind them. */
+.flute-card:nth-child(2),
+.flute-card:nth-child(3),
+.flute-card:nth-child(4) {
+  margin: 0 6px;
+}
+
 .flute-card.active {
   --scale: 1.08;
   border-color: #444444;
