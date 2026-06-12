@@ -179,7 +179,11 @@ export function PlayOverlay() {
         />
         <div className="play-grid-right">
           <ConfidencePanel scores={scores} top={topSwara} noneScore={noneScore} />
-          <BlowIntensityPanel intensity={lipTracking.intensity} enabled={lipTracking.enabled} />
+          <BlowIntensityPanel
+            intensity={lipTracking.intensity}
+            enabled={lipTracking.enabled}
+            isRunning={session.isRunning}
+          />
         </div>
       </div>
 
