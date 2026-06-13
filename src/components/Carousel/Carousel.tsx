@@ -1,17 +1,20 @@
-import { FLUTES } from '../../constants';
+import { useMemo } from 'react';
+import { FLUTES, FLUTE_IMAGE } from '../../constants';
 import { useFlute } from '../../state/FluteContext';
 import { MobileGate } from '../MobileGate';
 import { GradientText } from '../ui/GradientText';
 import DecryptedText from '../ui/DecryptedText';
-import { FluteCard } from './FluteCard';
+import CircularGallery, { type GalleryItem } from './CircularGallery';
 import { LightRays } from './LightRays';
-
-const ROTATIONS = [-35, -18, 0, 18, 35];
-const DEPTHS = [-80, -40, 0, -40, -80];
-const IMG_ROTATIONS = ['-12deg', '-12deg', '-12deg', '-12deg', '0deg'];
 
 export function Carousel() {
   const { openPlay } = useFlute();
+
+  const items: GalleryItem[] = useMemo(
+    () => FLUTES.map(f => ({ image: FLUTE_IMAGE[f.key], text: f.name })),
+    []
+  );
+
   return (
     <section className="section" id="carousel">
       <MobileGate>
@@ -36,18 +39,20 @@ export function Carousel() {
           />
         </p>
       </div>
-      <div className="carousel-wrapper" id="carouselWrapper" aria-label="Flute selector">
-        {FLUTES.map((flute, idx) => (
-          <FluteCard
-            key={flute.key}
-            flute={flute}
-            rotateY={ROTATIONS[idx]}
-            translateZ={DEPTHS[idx]}
-            imageRotate={IMG_ROTATIONS[idx]}
-            active={flute.key === 'C#'}
-            onActivate={() => openPlay(flute.key)}
-          />
-        ))}
+      <div className="carousel-wrapper carousel-wrapper--gallery" aria-label="Flute selector">
+        <CircularGallery
+          items={items}
+          bend={3}
+          textColor="#ffffff"
+          borderRadius={0.05}
+          scrollEase={0.04}
+          scrollSpeed={2}
+          font="bold 28px Bebas Neue"
+          onItemClick={(i) => {
+            const flute = FLUTES[i];
+            if (flute) openPlay(flute.key);
+          }}
+        />
       </div>
     </section>
   );
