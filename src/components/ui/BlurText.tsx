@@ -6,7 +6,6 @@ type Snapshot = Record<string, number | string>;
 interface BlurTextProps {
   text?: string;
   delay?: number;
-  startDelay?: number;
   className?: string;
   animateBy?: 'words' | 'letters';
   direction?: 'top' | 'bottom';
@@ -18,9 +17,6 @@ interface BlurTextProps {
   onAnimationComplete?: () => void;
   stepDuration?: number;
   as?: 'p' | 'h1' | 'h2' | 'h3' | 'h4' | 'span' | 'div';
-  inline?: boolean;
-  triggerOnce?: boolean;
-  replayKey?: string | number;
 }
 
 const buildKeyframes = (from: Snapshot, steps: Snapshot[]) => {
@@ -38,7 +34,6 @@ const buildKeyframes = (from: Snapshot, steps: Snapshot[]) => {
 const BlurText = ({
   text = '',
   delay = 200,
-  startDelay = 0,
   className = '',
   animateBy = 'words',
   direction = 'top',
@@ -50,9 +45,6 @@ const BlurText = ({
   onAnimationComplete,
   stepDuration = 0.35,
   as: Tag = 'p',
-  inline = false,
-  triggerOnce = true,
-  replayKey,
 }: BlurTextProps) => {
   const elements = animateBy === 'words' ? text.split(' ') : text.split('');
   const [inView, setInView] = useState(false);
@@ -65,16 +57,14 @@ const BlurText = ({
       ([entry]) => {
         if (entry.isIntersecting) {
           setInView(true);
-          if (triggerOnce) observer.unobserve(node);
-        } else if (!triggerOnce) {
-          setInView(false);
+          observer.unobserve(node);
         }
       },
       { threshold, rootMargin }
     );
     observer.observe(node);
     return () => observer.disconnect();
-  }, [threshold, rootMargin, triggerOnce, replayKey]);
+  }, [threshold, rootMargin]);
 
   const defaultFrom = useMemo<Snapshot>(
     () =>
@@ -105,14 +95,14 @@ const BlurText = ({
     <Tag
       ref={ref as React.RefObject<HTMLParagraphElement>}
       className={className}
-      style={{ display: inline ? 'inline-flex' : 'flex', flexWrap: 'wrap' }}
+      style={{ display: 'flex', flexWrap: 'wrap' }}
     >
       {elements.map((segment, index) => {
         const animateKeyframes = buildKeyframes(fromSnapshot, toSnapshots);
         const spanTransition: Transition = {
           duration: totalDuration,
           times,
-          delay: startDelay / 1000 + (index * delay) / 1000,
+          delay: (index * delay) / 1000,
           ease: easing,
         };
 
