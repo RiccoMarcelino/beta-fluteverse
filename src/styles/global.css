@@ -689,7 +689,7 @@ h3,
 .play-grid-right {
   display: flex;
   flex-direction: column;
-  justify-content: space-between;
+  justify-content: flex-start;
   gap: 14px;
   min-height: 0;
 }
