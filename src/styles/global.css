@@ -1142,7 +1142,156 @@ h3,
   }
 }
 
-/* Roadmap content styles will go here as the new design lands. */
+/* Roadmap content — vertical numbered timeline */
+.roadmap-bg {
+  position: fixed;
+  inset: 0;
+  z-index: 0;
+  pointer-events: none;
+  opacity: 0.55;
+}
+
+.roadmap-page {
+  position: relative;
+  z-index: 1;
+  width: min(880px, 100%);
+  margin: 0 auto;
+  padding: 96px 48px 64px;
+  display: flex;
+  flex-direction: column;
+  gap: 88px;
+}
+
+.roadmap-head {
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+  border-bottom: 1px solid var(--line);
+  padding-bottom: 56px;
+}
+
+.roadmap-eyebrow {
+  font-family: 'Doto', monospace;
+  font-weight: 600;
+  font-size: 13px;
+  letter-spacing: 3px;
+  color: var(--cyan-solid);
+  text-transform: uppercase;
+}
+
+.roadmap-title {
+  font-size: clamp(72px, 14vw, 168px);
+  line-height: 0.88;
+  color: var(--cream);
+  letter-spacing: -2px;
+}
+
+.roadmap-lede {
+  max-width: 520px;
+  font-family: 'Space Grotesk', sans-serif;
+  font-size: 17px;
+  line-height: 1.55;
+  color: var(--muted);
+}
+
+.roadmap-list {
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+}
+
+.roadmap-item {
+  display: grid;
+  grid-template-columns: 120px 1fr;
+  gap: 32px;
+  padding: 36px 0;
+  border-top: 1px solid var(--line);
+  position: relative;
+  transition: background 240ms ease, padding-left 240ms ease;
+}
+
+.roadmap-item:last-child {
+  border-bottom: 1px solid var(--line);
+}
+
+.roadmap-item:hover {
+  background: rgba(0, 255, 224, 0.03);
+  padding-left: 12px;
+}
+
+.roadmap-num {
+  font-family: 'Bebas Neue', sans-serif;
+  font-size: 80px;
+  line-height: 0.85;
+  color: var(--line);
+  letter-spacing: -1px;
+  transition: color 240ms ease;
+}
+
+.roadmap-item:hover .roadmap-num {
+  color: var(--cyan-solid);
+}
+
+.roadmap-body {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding-top: 6px;
+}
+
+.roadmap-item-title {
+  font-family: 'Bebas Neue', sans-serif;
+  font-size: clamp(22px, 2.4vw, 30px);
+  letter-spacing: 1px;
+  color: var(--cream);
+  text-transform: uppercase;
+}
+
+.roadmap-item-desc {
+  font-family: 'Space Grotesk', sans-serif;
+  font-size: 15px;
+  line-height: 1.6;
+  color: var(--muted);
+  max-width: 60ch;
+}
+
+.roadmap-foot {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding-top: 32px;
+  font-family: 'Doto', monospace;
+  font-size: 12px;
+  letter-spacing: 2px;
+  color: var(--muted);
+  text-transform: uppercase;
+}
+
+@media (max-width: 768px) {
+  .roadmap-page {
+    padding: 80px 24px 48px;
+    gap: 56px;
+  }
+  .roadmap-head {
+    padding-bottom: 36px;
+    gap: 14px;
+  }
+  .roadmap-item {
+    grid-template-columns: 64px 1fr;
+    gap: 18px;
+    padding: 28px 0;
+  }
+  .roadmap-item:hover {
+    padding-left: 0;
+  }
+  .roadmap-num {
+    font-size: 44px;
+  }
+  .roadmap-item-desc {
+    font-size: 14px;
+  }
+}
+
 
 /* ───────────────────────────────────────────────────────────────────────────
    RESPONSIVE BREAKPOINTS
