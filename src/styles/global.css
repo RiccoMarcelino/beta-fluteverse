@@ -370,20 +370,6 @@ h3,
   transform-style: preserve-3d;
 }
 
-.carousel-wrapper--gallery {
-  perspective: none;
-  display: block;
-  padding: 0;
-  transform-style: flat;
-}
-
-.carousel-wrapper--gallery .circular-gallery {
-  position: absolute;
-  inset: 110px 0 40px;
-  width: auto;
-  height: auto;
-}
-
 .flute-card {
   width: 220px;
   height: 340px;
