@@ -1176,10 +1176,10 @@ h3,
 }
 
 .roadmap-title {
-  font-size: clamp(72px, 14vw, 168px);
-  line-height: 0.88;
+  position: relative;
+  width: 100%;
+  max-width: 640px;
   color: var(--cream);
-  letter-spacing: -2px;
 }
 
 .roadmap-lede {

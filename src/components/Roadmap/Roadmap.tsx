@@ -4,6 +4,7 @@ import { useFlute } from '../../state/FluteContext';
 import { MobileGate } from '../MobileGate';
 import BlurText from '../ui/BlurText';
 import TextType from '../ui/TextType';
+import TextPressure from '../ui/TextPressure';
 import { FloatingLines } from './FloatingLines';
 
 export function Roadmap() {
@@ -54,7 +55,20 @@ export function Roadmap() {
       <div className="roadmap-page">
         <header className="roadmap-head">
           <span className="roadmap-eyebrow">WHAT&apos;S NEXT</span>
-          <h1 className="roadmap-title">ROADMAP</h1>
+          <div className="roadmap-title" aria-label="ROADMAP" role="heading" aria-level={1}>
+            <TextPressure
+              text="ROADMAP"
+              flex
+              width
+              weight
+              italic
+              alpha={false}
+              stroke={false}
+              scale={false}
+              textColor="#F0EBE0"
+              minFontSize={48}
+            />
+          </div>
           <TextType
             key={roadmapOpen ? 'open' : 'closed'}
             as="p"
