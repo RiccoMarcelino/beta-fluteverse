@@ -28,7 +28,7 @@ export function Roadmap() {
       <MobileGate>
         <div className="roadmap-bg" aria-hidden="true">
           <FloatingLines
-            linesGradient={['#00FFE0', '#0a3a3a', '#000000']}
+            linesGradient={['#3B82F6', '#0a3a3a', '#000000']}
             enabledWaves={['top', 'middle', 'bottom']}
             lineCount={[8, 12, 10]}
             lineDistance={[8, 6, 5]}
