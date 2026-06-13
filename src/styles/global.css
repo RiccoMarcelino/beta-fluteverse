@@ -573,6 +573,11 @@ h3,
   width: 100%;
   height: 100%;
   display: block;
+  /* Mirror the feed so it reads like a mirror (selfie view) — raise your right
+     hand, it moves right on screen. Flips the drawn skeleton/face overlay in
+     lockstep with the video since both live on this canvas. (Canvas-drawn text
+     in drawCameraError is counter-flipped so it still reads correctly.) */
+  transform: scaleX(-1);
 }
 
 .canvas-no-hand {

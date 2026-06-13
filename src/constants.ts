@@ -49,7 +49,7 @@ export const NO_HAND_FRAMES = 6;
 
 export const ROADMAP_FEATURES: RoadmapFeature[] = [
   { id: 'f1', title: 'DUAL HAND CONTROL',               desc: 'Play two-handed gestures for complex compositions and chord-style combinations.', done: true },
-  { id: 'f2', title: 'BREATH INTENSITY',                desc: 'A second MediaPipe model tracks lip openness in real time. Open wider to blow harder and control volume naturally.' },
+  { id: 'f2', title: 'BREATH INTENSITY',                desc: 'A second MediaPipe model tracks lip openness in real time. Open wider to blow harder and control volume naturally.', done: true },
   { id: 'f3', title: 'MULTI-ANGLE GESTURE RECOGNITION', desc: 'Improved model accuracy across different hand angles, distances and orientations.' },
   { id: 'f4', title: '2ND, 3RD & 4TH OCTAVE SUPPORT',   desc: 'Extend beyond one octave and unlock the full bansuri range.' },
   { id: 'f5', title: 'HALF NOTES & MICROTONES',         desc: 'Additional gesture shapes for komal and tivra swaras.' },

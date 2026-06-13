@@ -131,6 +131,11 @@ export function drawCameraError(canvas: HTMLCanvasElement): void {
   canvas.height = H;
   ctx.fillStyle = '#000';
   ctx.fillRect(0, 0, W, H);
+  // The canvas is CSS-mirrored (scaleX(-1)) for the selfie view; counter-flip
+  // here so this error text reads forwards instead of backwards.
+  ctx.save();
+  ctx.translate(W, 0);
+  ctx.scale(-1, 1);
   ctx.fillStyle = '#fff';
   ctx.font = "bold 20px 'Bebas Neue'";
   ctx.textAlign = 'center';
@@ -138,4 +143,5 @@ export function drawCameraError(canvas: HTMLCanvasElement): void {
   ctx.font = "13px 'Space Grotesk'";
   ctx.fillStyle = '#555';
   ctx.fillText('Allow camera permissions and refresh.', W / 2, H / 2 + 16);
+  ctx.restore();
 }
