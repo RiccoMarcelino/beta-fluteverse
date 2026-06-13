@@ -1,11 +1,13 @@
-import { useEffect } from 'react';
+import { useEffect, useRef } from 'react';
 import { ROADMAP_FEATURES } from '../../constants';
 import { useFlute } from '../../state/FluteContext';
 import { MobileGate } from '../MobileGate';
+import ScrollReveal from '../ui/ScrollReveal';
 import { FloatingLines } from './FloatingLines';
 
 export function Roadmap() {
   const { roadmapOpen, closeRoadmap } = useFlute();
+  const overlayRef = useRef<HTMLDivElement | null>(null);
 
   useEffect(() => {
     if (!roadmapOpen) return;
@@ -17,6 +19,7 @@ export function Roadmap() {
   return (
     <div
       id="roadmap-overlay"
+      ref={overlayRef}
       className={roadmapOpen ? 'visible' : ''}
       role="main"
       aria-label="Roadmap page"
@@ -64,7 +67,16 @@ export function Roadmap() {
               <span className="roadmap-num">{String(i + 1).padStart(2, '0')}</span>
               <div className="roadmap-body">
                 <h3 className="roadmap-item-title">{f.title}</h3>
-                <p className="roadmap-item-desc">{f.desc}</p>
+                <ScrollReveal
+                  scrollContainerRef={overlayRef}
+                  textClassName="roadmap-item-desc"
+                  baseOpacity={0.1}
+                  baseRotation={2}
+                  blurStrength={6}
+                  enableBlur
+                >
+                  {f.desc}
+                </ScrollReveal>
               </div>
             </li>
           ))}
