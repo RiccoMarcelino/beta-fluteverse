@@ -3,6 +3,7 @@ import { ROADMAP_FEATURES } from '../../constants';
 import { useFlute } from '../../state/FluteContext';
 import { MobileGate } from '../MobileGate';
 import BlurText from '../ui/BlurText';
+import TextType from '../ui/TextType';
 import { FloatingLines } from './FloatingLines';
 
 export function Roadmap() {
@@ -54,9 +55,17 @@ export function Roadmap() {
         <header className="roadmap-head">
           <span className="roadmap-eyebrow">WHAT&apos;S NEXT</span>
           <h1 className="roadmap-title">ROADMAP</h1>
-          <p className="roadmap-lede">
-            Every gesture is just the beginning. Here&apos;s what we&apos;re building next.
-          </p>
+          <TextType
+            key={roadmapOpen ? 'open' : 'closed'}
+            as="p"
+            className="roadmap-lede"
+            text="Every gesture is just the beginning. Here's what we're building next."
+            typingSpeed={32}
+            initialDelay={350}
+            loop={false}
+            showCursor
+            cursorCharacter="|"
+          />
         </header>
 
         <ol className="roadmap-list" key={roadmapOpen ? 'open' : 'closed'}>
