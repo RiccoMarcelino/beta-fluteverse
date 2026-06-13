@@ -6,12 +6,13 @@ import type { FluteKey } from '../../types';
 
 interface Props {
   fluteKey: FluteKey | null;
-  onConfirm: (mode: AudioMode) => void;
+  onConfirm: (mode: AudioMode, showTutorial: boolean) => void;
   onCancel: () => void;
 }
 
 export function AudioModeModal({ fluteKey, onConfirm, onCancel }: Props) {
   const [chosen, setChosen] = useState<AudioMode>('synthetic');
+  const [wantsTutorial, setWantsTutorial] = useState(true);
 
   return (
     <AnimatePresence>
@@ -63,7 +64,7 @@ export function AudioModeModal({ fluteKey, onConfirm, onCancel }: Props) {
               disableStepIndicators={false}
               backButtonText="BACK"
               nextButtonText="NEXT"
-              onFinalStepCompleted={() => onConfirm(chosen)}
+              onFinalStepCompleted={() => onConfirm(chosen, wantsTutorial)}
             >
               {/* Step 1 — Pick mode */}
               <Step>
@@ -97,7 +98,7 @@ export function AudioModeModal({ fluteKey, onConfirm, onCancel }: Props) {
               {/* Step 2 — Confirm */}
               <Step>
                 <h2 style={{ fontFamily: 'Bebas Neue', fontSize: 28, color: '#fff', letterSpacing: 4, marginBottom: 12 }}>
-                  READY TO PLAY
+                  CONFIRM AUDIO
                 </h2>
                 <div style={{ fontFamily: 'Space Grotesk', fontSize: 13, color: '#888', lineHeight: 1.7, marginBottom: 16 }}>
                   You're about to open the <span style={{ color: '#fff' }}>{fluteKey} Flute</span> with{' '}
@@ -126,6 +127,35 @@ export function AudioModeModal({ fluteKey, onConfirm, onCancel }: Props) {
                       <div>🎚 Pitch-shifted across full scale range</div>
                     </>
                   )}
+                </div>
+              </Step>
+
+              {/* Step 3 — Tutorial? */}
+              <Step>
+                <h2 style={{ fontFamily: 'Bebas Neue', fontSize: 28, color: '#fff', letterSpacing: 4, marginBottom: 12 }}>
+                  WATCH A TUTORIAL?
+                </h2>
+                <div style={{ fontFamily: 'Space Grotesk', fontSize: 13, color: '#888', lineHeight: 1.7, marginBottom: 16 }}>
+                  New here? See a short clip on how to play the flute with your hand before you start.
+                </div>
+
+                <div style={{ display: 'flex', flexDirection: 'column', gap: 12, marginBottom: 8 }}>
+                  <ModeCard
+                    active={wantsTutorial}
+                    onClick={() => setWantsTutorial(true)}
+                    title="YES, SHOW ME"
+                    badge="RECOMMENDED"
+                    description="The flute opens with the how-to video playing over it. Playing unlocks when the video ends — or press ✕ to skip and start right away."
+                    icon="🎬"
+                  />
+                  <ModeCard
+                    active={!wantsTutorial}
+                    onClick={() => setWantsTutorial(false)}
+                    title="NO, JUST PLAY"
+                    badge="SKIP"
+                    description="Jump straight into the flute. You can revisit the tutorial later by reopening this flute."
+                    icon="▶"
+                  />
                 </div>
               </Step>
             </Stepper>

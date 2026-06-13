@@ -13,6 +13,8 @@ interface Props {
   flute: FluteKey;
   blowIntensity?: number;
   blowEnabled?: boolean;
+  /** Lock Start while the how-to tutorial is playing. */
+  locked?: boolean;
 }
 
 function noteLabel(flute: FluteKey, swara: Swara): { note: string; freq: number } {
@@ -22,7 +24,7 @@ function noteLabel(flute: FluteKey, swara: Swara): { note: string; freq: number 
   return { note, freq: Math.round(freq * 100) / 100 };
 }
 
-export function ControlsRow({ isRunning, audioReady, cooldownMs, onCooldownChange, onStartStop, activeSwara, flute, blowIntensity = 0.5, blowEnabled = false }: Props) {
+export function ControlsRow({ isRunning, audioReady, cooldownMs, onCooldownChange, onStartStop, activeSwara, flute, blowIntensity = 0.5, blowEnabled = false, locked = false }: Props) {
   const [flash, setFlash] = useState(false);
 
   useEffect(() => {
@@ -38,8 +40,8 @@ export function ControlsRow({ isRunning, audioReady, cooldownMs, onCooldownChang
     <div className="controls-row">
       <div className="control-box">
         <div className="control-label">CONTROL</div>
-        <button className="brut-btn" onClick={onStartStop} disabled={!audioReady}>
-          {isRunning ? 'STOP' : 'START'}
+        <button className="brut-btn" onClick={onStartStop} disabled={!audioReady || locked}>
+          {locked ? 'TUTORIAL…' : isRunning ? 'STOP' : 'START'}
         </button>
       </div>
 

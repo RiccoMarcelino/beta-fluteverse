@@ -11,9 +11,13 @@ interface FluteApi {
   closePlay(): void;
   /** Pending flute key waiting for audio mode selection */
   pendingKey: FluteKey | null;
-  confirmPlay(mode: AudioMode): void;
+  confirmPlay(mode: AudioMode, showTutorial: boolean): void;
   cancelPending(): void;
   audioMode: AudioMode;
+  /** True while the how-to-play tutorial video is covering the play page. */
+  tutorialActive: boolean;
+  /** Dismiss the tutorial (video ended or user skipped) — unlocks play. */
+  dismissTutorial(): void;
   roadmapOpen: boolean;
   openRoadmap(): void;
   closeRoadmap(): void;
@@ -33,6 +37,7 @@ export function FluteProvider({ children }: { children: ReactNode }) {
   const [pendingKey, setPendingKey] = useState<FluteKey | null>(null);
   const [audioMode, setAudioMode]   = useState<AudioMode>('synthetic');
   const [roadmapOpen, setRoadmapOpen] = useState(false);
+  const [tutorialActive, setTutorialActive] = useState(false);
 
   return (
     <FluteCtx.Provider
@@ -47,9 +52,10 @@ export function FluteProvider({ children }: { children: ReactNode }) {
           setSelected(k);
           setPendingKey(k);
         },
-        confirmPlay(mode) {
+        confirmPlay(mode, showTutorial) {
           setAudioMode(mode);
           setPendingKey(null);
+          setTutorialActive(showTutorial);
           setPlayOpen(true);
         },
         cancelPending() {
@@ -57,6 +63,11 @@ export function FluteProvider({ children }: { children: ReactNode }) {
         },
         closePlay() {
           setPlayOpen(false);
+          setTutorialActive(false);
+        },
+        tutorialActive,
+        dismissTutorial() {
+          setTutorialActive(false);
         },
         roadmapOpen,
         openRoadmap() {

@@ -14,11 +14,12 @@ import { ControlsRow } from './ControlsRow';
 import { GestureCanvas } from './GestureCanvas';
 import { SideRays } from './SideRays';
 import { SwaraStrip } from './SwaraStrip';
+import { TutorialOverlay } from './TutorialOverlay';
 
 const EMPTY_SCORES: Record<Swara, number> = { Sa:0, Re:0, Ga:0, Ma:0, Pa:0, Dha:0, Ni:0 };
 
 export function PlayOverlay() {
-  const { selected, playOpen, closePlay, audioMode } = useFlute();
+  const { selected, playOpen, closePlay, audioMode, tutorialActive, dismissTutorial } = useFlute();
   const audio = useAudioEngine(audioMode);
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
 
@@ -98,6 +99,8 @@ export function PlayOverlay() {
   });
 
   const handleStartStop = useCallback(async () => {
+    // Playing is locked while the how-to tutorial is on screen.
+    if (tutorialActive) return;
     if (session.isRunning) {
       session.stop();
       return;
@@ -108,7 +111,7 @@ export function PlayOverlay() {
     } catch (err) {
       console.error(err);
     }
-  }, [session, audio]);
+  }, [session, audio, tutorialActive]);
 
   // Stop session when overlay closes
   useEffect(() => {
@@ -197,9 +200,12 @@ export function PlayOverlay() {
         flute={selected}
         blowIntensity={lipTracking.intensity}
         blowEnabled={lipTracking.enabled}
+        locked={tutorialActive}
       />
 
       <SwaraStrip active={activeSwara} noneActive={!activeSwara && noneScore > 50} />
+
+      <TutorialOverlay active={playOpen && tutorialActive} onDismiss={dismissTutorial} />
     </div>
   );
 }
