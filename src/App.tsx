@@ -6,6 +6,7 @@ import { AudioModeModal } from './components/Play/AudioModeModal';
 import { PlayOverlay } from './components/Play/PlayOverlay';
 import { Roadmap } from './components/Roadmap/Roadmap';
 import { Topbar } from './components/Topbar';
+import ClickSpark from './components/ui/ClickSpark';
 import { ToastProvider } from './components/ui/Toast';
 import { useAudioEngine } from './hooks/useAudioEngine';
 import { useHorizontalScroll } from './hooks/useHorizontalScroll';
@@ -136,7 +137,20 @@ export default function App() {
   return (
     <FluteProvider>
       <ToastProvider>
-        <Shell />
+        {/* Site-wide click sparks. The wrapper passes clicks through to the UI
+            (the canvas is pointer-events:none); .spark-layer in global.css lifts
+            the spark canvas above the app's fixed, opaque layers. */}
+        <div className="spark-layer">
+          <ClickSpark
+            sparkColor="#00FFE0"
+            sparkSize={10}
+            sparkRadius={18}
+            sparkCount={8}
+            duration={500}
+          >
+            <Shell />
+          </ClickSpark>
+        </div>
       </ToastProvider>
     </FluteProvider>
   );
