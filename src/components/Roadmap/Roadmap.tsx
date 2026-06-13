@@ -3,7 +3,6 @@ import { ROADMAP_FEATURES } from '../../constants';
 import { useFlute } from '../../state/FluteContext';
 import { MobileGate } from '../MobileGate';
 import { FloatingLines } from './FloatingLines';
-import BlurText from '../ui/BlurText';
 
 export function Roadmap() {
   const { roadmapOpen, closeRoadmap } = useFlute();
@@ -64,23 +63,8 @@ export function Roadmap() {
             <li className="roadmap-item" key={f.id}>
               <span className="roadmap-num">{String(i + 1).padStart(2, '0')}</span>
               <div className="roadmap-body">
-                <BlurText
-                  as="h3"
-                  text={f.title}
-                  className="roadmap-item-title"
-                  animateBy="words"
-                  direction="top"
-                  delay={120}
-                  stepDuration={0.35}
-                />
-                <BlurText
-                  text={f.desc}
-                  className="roadmap-item-desc"
-                  animateBy="words"
-                  direction="bottom"
-                  delay={40}
-                  stepDuration={0.3}
-                />
+                <h3 className="roadmap-item-title">{f.title}</h3>
+                <p className="roadmap-item-desc">{f.desc}</p>
               </div>
             </li>
           ))}
