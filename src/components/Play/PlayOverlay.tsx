@@ -26,7 +26,10 @@ export function PlayOverlay() {
   const [scores, setScores] = useState<Record<Swara, number>>(EMPTY_SCORES);
   const [noneScore, setNoneScore] = useState(0);
   const [topSwara, setTopSwara] = useState<Swara | null>(null);
-  const [activeSwara, setActiveSwara] = useState<Swara | null>(null);
+  // Swaras held across both hands (dual-hand) — drives the strip + active-note box.
+  const [activeSwaras, setActiveSwaras] = useState<Swara[]>([]);
+  // Hands currently detected (0–2) — surfaced as a live readout for dual-hand play.
+  const [handCount, setHandCount] = useState(0);
   const [cooldownMs, setCooldownMs] = useState(300);
   const [hasHand, setHasHand] = useState(false);
   const fluteRef = useRef(selected);
@@ -43,15 +46,17 @@ export function PlayOverlay() {
     cooldownMs,
     faceLandmarksRef,
     onSwaraStart(swara) {
-      setActiveSwara(swara);
       audio.trigger(fluteRef.current, swara);
     },
     onSwaraEnd(swara) {
       audio.release(fluteRef.current, swara);
     },
+    onActiveChange(swaras) {
+      setActiveSwaras(swaras);
+    },
     onAllRelease() {
       audio.releaseAll();
-      setActiveSwara(null);
+      setActiveSwaras([]);
     },
     onScores(s, none) {
       setScores(s);
@@ -64,6 +69,7 @@ export function PlayOverlay() {
       setTopSwara(maxVal > 0 ? max : null);
     },
     onHandPresence: setHasHand,
+    onHandCount: setHandCount,
     onGestureLatency: (latency) => {
       performanceStats.recordGestureLatency(latency);
     },
@@ -196,14 +202,15 @@ export function PlayOverlay() {
         cooldownMs={cooldownMs}
         onCooldownChange={setCooldownMs}
         onStartStop={handleStartStop}
-        activeSwara={activeSwara}
+        activeSwaras={activeSwaras}
+        handCount={handCount}
         flute={selected}
         blowIntensity={lipTracking.intensity}
         blowEnabled={lipTracking.enabled}
         locked={tutorialActive}
       />
 
-      <SwaraStrip active={activeSwara} noneActive={!activeSwara && noneScore > 50} />
+      <SwaraStrip active={activeSwaras} noneActive={activeSwaras.length === 0 && noneScore > 50} />
 
       <TutorialOverlay active={playOpen && tutorialActive} onDismiss={dismissTutorial} />
     </div>

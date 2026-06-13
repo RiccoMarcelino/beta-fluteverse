@@ -827,6 +827,12 @@ h3,
   letter-spacing: 4px;
 }
 
+/* Two hands held at once — shrink so both swaras fit the box. */
+.active-note-swara--multi {
+  font-size: clamp(26px, 3.6vw, 40px);
+  letter-spacing: 2px;
+}
+
 .active-note-detail {
   font-family: 'Space Grotesk', sans-serif;
   font-size: 12px;
@@ -845,6 +851,24 @@ h3,
 .active-blow-pct {
   color: #00FFE0;
   font-weight: 600;
+}
+
+.active-hands-line {
+  font-family: 'Space Grotesk', sans-serif;
+  font-size: 10px;
+  letter-spacing: 2px;
+  color: #333;
+  margin-top: 4px;
+}
+
+.active-hands-n {
+  color: #555;
+  font-weight: 600;
+}
+
+/* Both hands tracked — light up the count to confirm dual-hand play is live. */
+.active-hands-n.dual {
+  color: #00FFE0;
 }
 
 .swara-strip {
@@ -1348,6 +1372,33 @@ h3,
   max-width: 60ch;
 }
 
+/* Title + "shipped" badge share a row; badge wraps below on narrow widths. */
+.roadmap-item-head {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  flex-wrap: wrap;
+}
+
+.roadmap-done-badge {
+  font-family: 'Doto', monospace;
+  font-size: 11px;
+  letter-spacing: 2px;
+  text-transform: uppercase;
+  color: var(--cyan-solid);
+  border: 1px solid var(--cyan-solid);
+  border-radius: 999px;
+  padding: 3px 10px;
+  line-height: 1;
+  white-space: nowrap;
+  box-shadow: 0 0 12px rgba(0, 255, 224, 0.25);
+}
+
+/* Shipped items read as "lit" — the index number glows cyan even at rest. */
+.roadmap-item--done .roadmap-num {
+  color: var(--cyan-solid);
+}
+
 .roadmap-foot {
   display: flex;
   justify-content: space-between;
@@ -1382,6 +1433,11 @@ h3,
   }
   .roadmap-item-desc {
     font-size: 14px;
+  }
+  .roadmap-done-badge {
+    font-size: 10px;
+    letter-spacing: 1px;
+    padding: 2px 8px;
   }
 }
 

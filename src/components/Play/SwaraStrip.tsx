@@ -2,7 +2,8 @@ import { SWARAS } from '../../constants';
 import type { Swara } from '../../types';
 
 interface Props {
-  active: Swara | null;
+  /** All swaras currently held (one per hand; deduped). */
+  active: Swara[];
   noneActive: boolean;
 }
 
@@ -15,7 +16,7 @@ export function SwaraStrip({ active, noneActive }: Props) {
       </div>
 
       {SWARAS.map(s => (
-        <div key={s} className={`swara-box${active === s ? ' active' : ''}`}>
+        <div key={s} className={`swara-box${active.includes(s) ? ' active' : ''}`}>
           {s}
         </div>
       ))}

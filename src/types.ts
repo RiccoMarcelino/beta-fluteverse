@@ -13,6 +13,8 @@ export interface RoadmapFeature {
   id: string;
   title: string;
   desc: string;
+  /** Marks a feature as already shipped — rendered with a "completed" badge. */
+  done?: boolean;
 }
 
 export type SectionId = 'hero' | 'carousel' | 'roadmap';

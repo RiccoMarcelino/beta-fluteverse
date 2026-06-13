@@ -15,7 +15,7 @@ export async function getRecognizer(): Promise<GestureRecognizer> {
     const baseOpts = {
       baseOptions: { modelAssetPath: GESTURE_MODEL_URL, delegate: 'GPU' as const },
       runningMode: 'VIDEO' as const,
-      numHands: 1,
+      numHands: 2,
       minHandDetectionConfidence: 0.5,
       minHandPresenceConfidence: 0.5,
       minTrackingConfidence: 0.5,

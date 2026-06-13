@@ -1,0 +1,16 @@
+/* Neutral wrapper — appearance (font, color, size, width) is driven by the
+   className passed in, so this component drops cleanly into any layout.
+   (React Bits ships a demo `.text-block` with hard margins + monospace; that
+   would wreck the surrounding layout, so it's intentionally not used here.) */
+.scrambled-text {
+  display: block;
+}
+
+.scrambled-text p {
+  margin: 0;
+}
+
+.scrambled-text .char {
+  will-change: transform;
+  display: inline-block;
+}

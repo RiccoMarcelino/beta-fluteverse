@@ -5,6 +5,7 @@ import { MobileGate } from '../MobileGate';
 import BlurText from '../ui/BlurText';
 import TextType from '../ui/TextType';
 import TextPressure from '../ui/TextPressure';
+import ScrambledText from '../ui/ScrambledText';
 import { FloatingLines } from './FloatingLines';
 
 export function Roadmap() {
@@ -84,26 +85,29 @@ export function Roadmap() {
 
         <ol className="roadmap-list" key={roadmapOpen ? 'open' : 'closed'}>
           {ROADMAP_FEATURES.map((f, i) => (
-            <li className="roadmap-item" key={f.id}>
+            <li className={`roadmap-item${f.done ? ' roadmap-item--done' : ''}`} key={f.id}>
               <span className="roadmap-num">{String(i + 1).padStart(2, '0')}</span>
               <div className="roadmap-body">
-                <BlurText
-                  as="h3"
-                  text={f.title}
-                  className="roadmap-item-title"
-                  animateBy="letters"
-                  direction="top"
-                  delay={28}
-                  stepDuration={0.4}
-                />
-                <BlurText
-                  text={f.desc}
+                <div className="roadmap-item-head">
+                  <BlurText
+                    as="h3"
+                    text={f.title}
+                    className="roadmap-item-title"
+                    animateBy="letters"
+                    direction="top"
+                    delay={28}
+                    stepDuration={0.4}
+                  />
+                  {f.done && <span className="roadmap-done-badge">✓ Shipped</span>}
+                </div>
+                <ScrambledText
                   className="roadmap-item-desc"
-                  animateBy="words"
-                  direction="bottom"
-                  delay={40}
-                  stepDuration={0.35}
-                />
+                  radius={90}
+                  duration={1.0}
+                  speed={0.5}
+                >
+                  {f.desc}
+                </ScrambledText>
               </div>
             </li>
           ))}

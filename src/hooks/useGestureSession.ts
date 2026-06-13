@@ -5,14 +5,22 @@ import { getRecognizer } from '../gesture/recognizer';
 import { drawCameraError, drawFaceMesh, drawHand } from '../gesture/drawHand';
 import { useIsMobile } from './useIsMobile';
 
+const makeScores = (): Record<Swara, number> => ({ Sa:0, Re:0, Ga:0, Ma:0, Pa:0, Dha:0, Ni:0 });
+
 export interface GestureSessionArgs {
   canvasRef: React.RefObject<HTMLCanvasElement | null>;
   cooldownMs: number;
+  /** A swara became audible — fired once when the first hand starts playing it. */
   onSwaraStart(swara: Swara): void;
+  /** A swara went silent — fired once when the last hand playing it stops. */
   onSwaraEnd(swara: Swara): void;
+  /** The full set of swaras currently held across all hands (for UI highlight). */
+  onActiveChange(active: Swara[]): void;
   onAllRelease(): void;
   onScores(scores: Record<Swara, number>, noneScore: number): void;
   onHandPresence(hasHand: boolean): void;
+  /** Number of hands currently detected (0, 1 or 2). */
+  onHandCount?(count: number): void;
   onGestureLatency?(latency: number): void;
   /** Latest face landmarks from lip tracker — drawn each frame after the hand */
   faceLandmarksRef?: React.RefObject<Array<{ x: number; y: number; z: number }> | null>;
@@ -36,9 +44,40 @@ export function useGestureSession(args: GestureSessionArgs): GestureSessionApi {
   const rafRef = useRef<number | null>(null);
   const runningRef = useRef(false);
   const lastInferenceRef = useRef(0);
-  const lastTriggerRef = useRef(0);
-  const lastSwaraRef = useRef<Swara | null>(null);
   const noHandFramesRef = useRef(0);
+
+  // Per-hand committed swara + cooldown, keyed by MediaPipe handedness ("Left"/"Right").
+  const handStatesRef = useRef<Map<string, { swara: Swara | null; lastTrigger: number }>>(new Map());
+  // Swaras currently sounding (the union across hands, deduped) — the audio truth.
+  const soundingRef = useRef<Set<Swara>>(new Set());
+
+  // Reconcile the desired set of held swaras (union across hands) against what is
+  // currently sounding, firing start/end exactly once per swara. Dedupes the case
+  // where both hands play the same swara → one note.
+  const reconcile = useCallback((desired: Set<Swara>) => {
+    for (const s of desired) {
+      if (!soundingRef.current.has(s)) {
+        soundingRef.current.add(s);
+        cbRef.current.onSwaraStart(s);
+      }
+    }
+    for (const s of [...soundingRef.current]) {
+      if (!desired.has(s)) {
+        soundingRef.current.delete(s);
+        cbRef.current.onSwaraEnd(s);
+      }
+    }
+    cbRef.current.onActiveChange([...soundingRef.current]);
+  }, []);
+
+  const resetHands = useCallback(() => {
+    handStatesRef.current.clear();
+    if (soundingRef.current.size > 0) {
+      soundingRef.current.clear();
+      cbRef.current.onAllRelease();
+    }
+    cbRef.current.onActiveChange([]);
+  }, []);
 
   // Stable refs for the latest callbacks
   const cbRef = useRef(args);
@@ -79,54 +118,77 @@ export function useGestureSession(args: GestureSessionArgs): GestureSessionApi {
     if (results.landmarks && results.landmarks.length > 0) {
       noHandFramesRef.current = 0;
       cbRef.current.onHandPresence(true);
-      // Draw face mesh first (underneath hand skeleton)
+      cbRef.current.onHandCount?.(results.landmarks.length);
+
+      // Draw face mesh first (underneath hand skeletons), then every detected hand.
       const faceLm = cbRef.current.faceLandmarksRef?.current;
       if (faceLm) drawFaceMesh(canvas, faceLm);
-      drawHand(canvas, results.landmarks[0]);
+      for (const hand of results.landmarks) drawHand(canvas, hand);
 
-      const scores: Record<Swara, number> = { Sa:0, Re:0, Ga:0, Ma:0, Pa:0, Dha:0, Ni:0 };
-      let noneScore = 0;
-      if (results.gestures.length > 0) {
-        for (const g of results.gestures[0]) {
+      const now = Date.now();
+      const scores = makeScores();   // max confidence per swara across hands
+      let minNone = 1;               // silence only when *every* hand is idle
+      const presentKeys = new Set<string>();
+
+      for (let h = 0; h < results.landmarks.length; h++) {
+        // Stable per-hand key from handedness; fall back to index, and de-collide
+        // if the model reports the same handedness for both hands in one frame.
+        let key = results.handedness?.[h]?.[0]?.categoryName ?? `hand${h}`;
+        if (presentKeys.has(key)) key = `${key}#${h}`;
+        presentKeys.add(key);
+
+        let state = handStatesRef.current.get(key);
+        if (!state) { state = { swara: null, lastTrigger: 0 }; handStatesRef.current.set(key, state); }
+
+        const gestures = results.gestures[h] ?? [];
+        let handNone = 0;
+        for (const g of gestures) {
           if (g.categoryName === 'None') {
-            noneScore = g.score;
+            handNone = g.score;
           } else if (g.categoryName in scores) {
-            scores[g.categoryName as Swara] = g.score;
+            scores[g.categoryName as Swara] = Math.max(scores[g.categoryName as Swara], g.score);
+          }
+        }
+        minNone = Math.min(minNone, handNone);
+
+        if (gestures.length > 0) {
+          const top = gestures[0];
+          const label = top.categoryName;
+          // If None is the top result OR competes significantly, this hand is silent
+          const noneIsTop = label === 'None' && top.score >= CONFIDENCE_THRESHOLD;
+          const noneIsSignificant = handNone >= 0.30;
+
+          if (noneIsTop || noneIsSignificant) {
+            state.swara = null;
+          } else {
+            const swaraLabel = label as Swara;
+            if (
+              top.score >= CONFIDENCE_THRESHOLD &&
+              SWARAS.includes(swaraLabel) &&
+              swaraLabel !== state.swara &&
+              now - state.lastTrigger >= cbRef.current.cooldownMs
+            ) {
+              state.swara = swaraLabel;
+              state.lastTrigger = now;
+            }
+            // otherwise hold the hand's current swara (sustain)
           }
         }
       }
-      cbRef.current.onScores(scores, noneScore);
 
-      if (results.gestures.length > 0 && results.gestures[0].length > 0) {
-        const top = results.gestures[0][0];
-        const label = top.categoryName;
-
-        // If None is the top result OR has significant score, treat as silence
-        const noneIsTop = label === 'None' && top.score >= CONFIDENCE_THRESHOLD;
-        const noneIsSignificant = noneScore >= 0.30; // None competing = ambiguous = silence
-
-        if (noneIsTop || noneIsSignificant) {
-          if (lastSwaraRef.current) {
-            cbRef.current.onAllRelease();
-            lastSwaraRef.current = null;
-          }
-        } else {
-          const swaraLabel = label as Swara;
-          const now = Date.now();
-          if (
-            top.score >= CONFIDENCE_THRESHOLD &&
-            SWARAS.includes(swaraLabel) &&
-            swaraLabel !== lastSwaraRef.current &&
-            now - lastTriggerRef.current >= cbRef.current.cooldownMs
-          ) {
-            const prev = lastSwaraRef.current;
-            if (prev) cbRef.current.onSwaraEnd(prev);
-            lastSwaraRef.current = swaraLabel;
-            lastTriggerRef.current = now;
-            cbRef.current.onSwaraStart(swaraLabel);
-          }
-        }
+      // Drop state for hands that left the frame this tick.
+      for (const key of [...handStatesRef.current.keys()]) {
+        if (!presentKeys.has(key)) handStatesRef.current.delete(key);
       }
+
+      // The set of swaras held across all hands (deduped) is the audio truth.
+      const desired = new Set<Swara>();
+      for (const state of handStatesRef.current.values()) {
+        if (state.swara) desired.add(state.swara);
+      }
+
+      cbRef.current.onScores(scores, desired.size > 0 ? 0 : minNone);
+      reconcile(desired);
     } else {
       noHandFramesRef.current += 1;
       // Still draw face mesh even when no hand present
@@ -134,13 +196,11 @@ export function useGestureSession(args: GestureSessionArgs): GestureSessionApi {
       if (faceLm && canvas) drawFaceMesh(canvas, faceLm);
       if (noHandFramesRef.current >= NO_HAND_FRAMES) {
         cbRef.current.onHandPresence(false);
-        if (lastSwaraRef.current) {
-          cbRef.current.onAllRelease();
-          lastSwaraRef.current = null;
-        }
+        cbRef.current.onHandCount?.(0);
+        resetHands();
       }
     }
-  }, []);
+  }, [reconcile, resetHands]);
 
   const recognizerRef = useRef<Awaited<ReturnType<typeof getRecognizer>> | null>(null);
 
@@ -178,8 +238,8 @@ export function useGestureSession(args: GestureSessionArgs): GestureSessionApi {
       await video.play();
 
       noHandFramesRef.current = 0;
-      lastSwaraRef.current = null;
-      lastTriggerRef.current = 0;
+      handStatesRef.current.clear();
+      soundingRef.current.clear();
       runningRef.current = true;
       setIsRunning(true);
       if (rafRef.current == null) {
@@ -207,10 +267,13 @@ export function useGestureSession(args: GestureSessionArgs): GestureSessionApi {
       rafRef.current = null;
     }
     cbRef.current.onAllRelease();
-    lastSwaraRef.current = null;
+    handStatesRef.current.clear();
+    soundingRef.current.clear();
+    cbRef.current.onActiveChange([]);
     noHandFramesRef.current = 0;
-    cbRef.current.onScores({ Sa:0, Re:0, Ga:0, Ma:0, Pa:0, Dha:0, Ni:0 }, 0);
+    cbRef.current.onScores(makeScores(), 0);
     cbRef.current.onHandPresence(false);
+    cbRef.current.onHandCount?.(0);
     const canvas = cbRef.current.canvasRef.current;
     if (canvas) {
       const ctx = canvas.getContext('2d');

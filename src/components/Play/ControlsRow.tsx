@@ -9,7 +9,10 @@ interface Props {
   cooldownMs: number;
   onCooldownChange(v: number): void;
   onStartStop(): void;
-  activeSwara: Swara | null;
+  /** Swaras held across both hands (dual-hand) — drives the active-note readout. */
+  activeSwaras: Swara[];
+  /** Number of hands currently detected (0–2) — shown as a live readout. */
+  handCount?: number;
   flute: FluteKey;
   blowIntensity?: number;
   blowEnabled?: boolean;
@@ -24,17 +27,24 @@ function noteLabel(flute: FluteKey, swara: Swara): { note: string; freq: number 
   return { note, freq: Math.round(freq * 100) / 100 };
 }
 
-export function ControlsRow({ isRunning, audioReady, cooldownMs, onCooldownChange, onStartStop, activeSwara, flute, blowIntensity = 0.5, blowEnabled = false, locked = false }: Props) {
+export function ControlsRow({ isRunning, audioReady, cooldownMs, onCooldownChange, onStartStop, activeSwaras, handCount = 0, flute, blowIntensity = 0.5, blowEnabled = false, locked = false }: Props) {
   const [flash, setFlash] = useState(false);
+  const activeKey = activeSwaras.join(',');
 
   useEffect(() => {
-    if (!activeSwara) return;
+    if (!activeKey) return;
     setFlash(false);
     const id = window.setTimeout(() => setFlash(true), 10);
     return () => clearTimeout(id);
-  }, [activeSwara]);
+  }, [activeKey]);
 
-  const info = activeSwara ? noteLabel(flute, activeSwara) : null;
+  const notes = activeSwaras.map(s => noteLabel(flute, s));
+  const multi = activeSwaras.length > 1;
+  const swaraText = activeSwaras.length ? activeSwaras.join(' · ') : '—';
+  const detailText =
+    notes.length === 0 ? ''
+    : notes.length === 1 ? `${notes[0].note} — ${notes[0].freq} Hz`
+    : notes.map(n => n.note).join(' · ');
 
   return (
     <div className="controls-row">
@@ -59,8 +69,13 @@ export function ControlsRow({ isRunning, audioReady, cooldownMs, onCooldownChang
       </div>
 
       <div className={`control-box active-note-box${flash ? ' flash' : ''}`}>
-        <div className="active-note-swara">{activeSwara ?? '—'}</div>
-        <div className="active-note-detail">{info ? `${info.note} — ${info.freq} Hz` : ''}</div>
+        <div className={`active-note-swara${multi ? ' active-note-swara--multi' : ''}`}>{swaraText}</div>
+        <div className="active-note-detail">{detailText}</div>
+        {isRunning && handCount > 0 && (
+          <div className="active-hands-line">
+            HANDS <span className={`active-hands-n${handCount > 1 ? ' dual' : ''}`}>{handCount}</span>
+          </div>
+        )}
         {blowEnabled && isRunning && (
           <div className="active-blow-line">
             BLOW <span className="active-blow-pct">{Math.round(blowIntensity * 100)}%</span>
