@@ -17,10 +17,11 @@ let _samplerEngine: SamplerEngine | null = null;
 export function getSamplerEngine(): SamplerEngine {
   if (_samplerEngine) return _samplerEngine;
 
-  // Recorded flute samples sit well below full scale, so apply a healthy makeup
-  // boost. A brickwall limiter on the end soaks up the peaks that dual-hand
-  // polyphony + reverb would otherwise clip at this gain.
-  const masterGain = new Tone.Gain(3.5);
+  // Recorded flute samples sit well below full scale, so apply a heavy makeup
+  // boost (10x the earlier value). The brickwall limiter on the end is doing
+  // real work now — it catches everything the samples + dual-hand polyphony +
+  // reverb push past the ceiling at this gain, so nothing hard-clips.
+  const masterGain = new Tone.Gain(35);
   const reverb = new Tone.Reverb({ decay: 1.5, wet: 0.3 });
   const limiter = new Tone.Limiter(-1).toDestination();
   masterGain.connect(reverb);
@@ -109,9 +110,10 @@ export function getSamplerEngine(): SamplerEngine {
       sampler.releaseAll();
     },
     setBlowIntensity(intensity: number) {
-      // Boosted range so the samples stay clearly audible even with the mouth
-      // closed; blow still adds noticeable dynamics on top. Limiter guards the top.
-      const volume = 2.0 + intensity * 2.5;
+      // Boosted range (10x the earlier values) so the samples stay clearly
+      // audible even with the mouth closed; blow still adds dynamics on top.
+      // Limiter guards the top.
+      const volume = 20 + intensity * 25;
       masterGain.gain.setTargetAtTime(volume, Tone.getContext().currentTime, 0.05);
     },
   };
