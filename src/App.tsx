@@ -27,10 +27,14 @@ function RoadmapLink() {
   );
 }
 
+const LOADER_HIDE_DELAY = 900;
+const LOADER_FADE_DURATION = 800;
+
 function Shell() {
   const audio = useAudioEngine('synthetic');
   const isMobile = useIsMobile();
   const [bootDone, setBootDone] = useState(false);
+  const [uiReady, setUiReady] = useState(false);
   const { pendingKey, confirmPlay, cancelPending } = useFlute();
 
   // Boot: warm up gesture model in background (so first START is fast)
@@ -47,6 +51,18 @@ function Shell() {
   useEffect(() => {
     if (audio.ready) setBootDone(true);
   }, [audio.ready]);
+
+  // Mount the main UI only after the loader has fully faded out, so the
+  // loader's centered "FLUTEVERSE" doesn't visually overlap the topbar's
+  // fuzzy-text "FLUTEVERSE" during the crossfade.
+  useEffect(() => {
+    if (!bootDone) return;
+    const t = window.setTimeout(
+      () => setUiReady(true),
+      LOADER_HIDE_DELAY + LOADER_FADE_DURATION
+    );
+    return () => window.clearTimeout(t);
+  }, [bootDone]);
 
   const containerRef = useRef<HTMLDivElement | null>(null);
   const trackRef = useRef<HTMLDivElement | null>(null);
@@ -73,12 +89,14 @@ function Shell() {
         </div>
       </div>
 
-      <Topbar
-        onBrandClick={() => scrollToSection('hero')}
-        onNavClick={id => scrollToSection(id)}
-      />
+      {uiReady && (
+        <Topbar
+          onBrandClick={() => scrollToSection('hero')}
+          onNavClick={id => scrollToSection(id)}
+        />
+      )}
 
-      <RoadmapLink />
+      {uiReady && <RoadmapLink />}
 
       <Roadmap />
 

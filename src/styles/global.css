@@ -136,18 +136,14 @@ h3,
 
 .status-text__content { display: inline; }
 
-.status-text__cursor {
-  display: inline-block;
-  margin-left: 2px;
-  color: var(--cyan-solid);
-  opacity: 1;
-  font-weight: 300;
-  animation: cursorBlink 900ms ease-in-out infinite;
-}
+.status-text .text-type { display: inline-flex; align-items: baseline; }
 
-@keyframes cursorBlink {
-  0%, 100% { opacity: 1; }
-  50%      { opacity: 0; }
+.status-text .text-type__content { color: #888888; }
+
+.status-text .loader-cursor {
+  color: var(--cyan-solid);
+  font-weight: 300;
+  margin-left: 2px;
 }
 
 .bar {
