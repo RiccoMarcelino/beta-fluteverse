@@ -90,8 +90,8 @@ export function getEngine(): FluteEngine {
     wet: 0.5,
   });
 
-  // Master gain for blow intensity control
-  const masterGain = new Tone.Gain(0.5);
+  // Master gain for blow intensity control (cut to 1/5 to quiet the flute)
+  const masterGain = new Tone.Gain(0.1);
 
   // Add reverb for natural room sound
   const reverb = new Tone.Reverb({
@@ -136,7 +136,8 @@ export function getEngine(): FluteEngine {
       synth.releaseAll();
     },
     setBlowIntensity(intensity: number) {
-      const volume = 0.05 + intensity * 0.95;
+      // Range cut to 1/5 to quiet the flute.
+      const volume = 0.01 + intensity * 0.19;
       masterGain.gain.setTargetAtTime(volume, Tone.getContext().currentTime, 0.04);
     },
     dispose() {
