@@ -22,6 +22,7 @@ export function Hero() {
               delay={140}
               stepDuration={0.4}
               triggerOnce={false}
+              immediate
               inline
             />
           </GradientText>
@@ -37,6 +38,7 @@ export function Hero() {
               startDelay={300}
               stepDuration={0.4}
               triggerOnce={false}
+              immediate
               inline
             />
           </GradientText>

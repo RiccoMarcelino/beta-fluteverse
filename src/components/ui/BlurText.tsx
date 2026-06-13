@@ -21,6 +21,7 @@ interface BlurTextProps {
   inline?: boolean;
   triggerOnce?: boolean;
   replayKey?: string | number;
+  immediate?: boolean;
 }
 
 const buildKeyframes = (from: Snapshot, steps: Snapshot[]) => {
@@ -53,12 +54,18 @@ const BlurText = ({
   inline = false,
   triggerOnce = true,
   replayKey,
+  immediate = false,
 }: BlurTextProps) => {
   const elements = animateBy === 'words' ? text.split(' ') : text.split('');
-  const [inView, setInView] = useState(false);
+  const [inView, setInView] = useState(immediate);
   const ref = useRef<HTMLElement | null>(null);
 
   useEffect(() => {
+    if (immediate) {
+      setInView(false);
+      const id = requestAnimationFrame(() => setInView(true));
+      return () => cancelAnimationFrame(id);
+    }
     if (!ref.current) return;
     const node = ref.current;
     const observer = new IntersectionObserver(
@@ -74,7 +81,7 @@ const BlurText = ({
     );
     observer.observe(node);
     return () => observer.disconnect();
-  }, [threshold, rootMargin, triggerOnce, replayKey]);
+  }, [threshold, rootMargin, triggerOnce, replayKey, immediate]);
 
   const defaultFrom = useMemo<Snapshot>(
     () =>
