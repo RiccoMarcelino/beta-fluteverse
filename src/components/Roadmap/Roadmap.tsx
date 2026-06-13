@@ -2,6 +2,7 @@ import { useEffect } from 'react';
 import { ROADMAP_FEATURES } from '../../constants';
 import { useFlute } from '../../state/FluteContext';
 import { MobileGate } from '../MobileGate';
+import BlurText from '../ui/BlurText';
 import { FloatingLines } from './FloatingLines';
 
 export function Roadmap() {
@@ -58,13 +59,28 @@ export function Roadmap() {
           </p>
         </header>
 
-        <ol className="roadmap-list">
+        <ol className="roadmap-list" key={roadmapOpen ? 'open' : 'closed'}>
           {ROADMAP_FEATURES.map((f, i) => (
             <li className="roadmap-item" key={f.id}>
               <span className="roadmap-num">{String(i + 1).padStart(2, '0')}</span>
               <div className="roadmap-body">
-                <h3 className="roadmap-item-title">{f.title}</h3>
-                <p className="roadmap-item-desc">{f.desc}</p>
+                <BlurText
+                  as="h3"
+                  text={f.title}
+                  className="roadmap-item-title"
+                  animateBy="letters"
+                  direction="top"
+                  delay={28}
+                  stepDuration={0.4}
+                />
+                <BlurText
+                  text={f.desc}
+                  className="roadmap-item-desc"
+                  animateBy="words"
+                  direction="bottom"
+                  delay={40}
+                  stepDuration={0.35}
+                />
               </div>
             </li>
           ))}
