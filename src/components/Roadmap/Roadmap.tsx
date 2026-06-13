@@ -2,7 +2,7 @@ import { useEffect } from 'react';
 import { ROADMAP_FEATURES } from '../../constants';
 import { useFlute } from '../../state/FluteContext';
 import { MobileGate } from '../MobileGate';
-import GradientBlinds from './GradientBlinds';
+import { FloatingLines } from './FloatingLines';
 
 export function Roadmap() {
   const { roadmapOpen, closeRoadmap } = useFlute();
@@ -24,19 +24,17 @@ export function Roadmap() {
     >
       <MobileGate>
         <div className="roadmap-bg" aria-hidden="true">
-          <GradientBlinds
-            gradientColors={['#FF9FFC', '#5227FF']}
-            angle={0}
-            noise={0.3}
-            blindCount={12}
-            blindMinWidth={50}
-            spotlightRadius={0.5}
-            spotlightSoftness={1}
-            spotlightOpacity={1}
-            mouseDampening={0.15}
-            distortAmount={0}
-            shineDirection="left"
-            mixBlendMode="lighten"
+          <FloatingLines
+            linesGradient={['#00FFE0', '#0a3a3a', '#000000']}
+            enabledWaves={['top', 'middle', 'bottom']}
+            lineCount={[8, 12, 10]}
+            lineDistance={[8, 6, 5]}
+            bendRadius={5.0}
+            bendStrength={-0.5}
+            interactive
+            parallax
+            animationSpeed={1.4}
+            mixBlendMode="screen"
           />
         </div>
       </MobileGate>
