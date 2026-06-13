@@ -17,9 +17,14 @@ let _samplerEngine: SamplerEngine | null = null;
 export function getSamplerEngine(): SamplerEngine {
   if (_samplerEngine) return _samplerEngine;
 
-  const masterGain = new Tone.Gain(1.4);
-  const reverb = new Tone.Reverb({ decay: 1.5, wet: 0.3 }).toDestination();
+  // Recorded flute samples sit well below full scale, so apply a healthy makeup
+  // boost. A brickwall limiter on the end soaks up the peaks that dual-hand
+  // polyphony + reverb would otherwise clip at this gain.
+  const masterGain = new Tone.Gain(3.5);
+  const reverb = new Tone.Reverb({ decay: 1.5, wet: 0.3 });
+  const limiter = new Tone.Limiter(-1).toDestination();
   masterGain.connect(reverb);
+  reverb.connect(limiter);
 
   const ATTACK = 0.05;
   const RELEASE = 0.8;
@@ -104,7 +109,9 @@ export function getSamplerEngine(): SamplerEngine {
       sampler.releaseAll();
     },
     setBlowIntensity(intensity: number) {
-      const volume = 0.5 + intensity * 1.0;
+      // Boosted range so the samples stay clearly audible even with the mouth
+      // closed; blow still adds noticeable dynamics on top. Limiter guards the top.
+      const volume = 2.0 + intensity * 2.5;
       masterGain.gain.setTargetAtTime(volume, Tone.getContext().currentTime, 0.05);
     },
   };
