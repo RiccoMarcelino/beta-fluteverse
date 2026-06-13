@@ -29,6 +29,8 @@ function RoadmapLink() {
 
 const LOADER_HIDE_DELAY = 900;
 const LOADER_FADE_DURATION = 800;
+// Artificial minimum the loader stays on screen, even if boot finishes sooner.
+const MIN_LOADER_MS = 2500;
 
 function Shell() {
   const audio = useAudioEngine('synthetic');
@@ -36,21 +38,31 @@ function Shell() {
   const [bootDone, setBootDone] = useState(false);
   const [uiReady, setUiReady] = useState(false);
   const { pendingKey, confirmPlay, cancelPending } = useFlute();
+  const bootStart = useRef(Date.now());
+
+  // Flip bootDone, but never before MIN_LOADER_MS has elapsed since mount.
+  const finishBoot = useRef((cancelled?: () => boolean) => {
+    const wait = Math.max(0, MIN_LOADER_MS - (Date.now() - bootStart.current));
+    window.setTimeout(() => {
+      if (!cancelled?.()) setBootDone(true);
+    }, wait);
+  }).current;
 
   // Boot: warm up gesture model in background (so first START is fast)
   useEffect(() => {
     let cancelled = false;
+    const isCancelled = () => cancelled;
     getRecognizer().catch(err => console.warn('Gesture init failed:', err));
     audio
-      ? Promise.resolve(audio.ready).then(() => { if (!cancelled) setBootDone(true); })
-      : setBootDone(true);
-    const t = window.setTimeout(() => setBootDone(true), 6000);
+      ? Promise.resolve(audio.ready).then(() => { if (!cancelled) finishBoot(isCancelled); })
+      : finishBoot(isCancelled);
+    const t = window.setTimeout(() => finishBoot(isCancelled), 6000);
     return () => { cancelled = true; clearTimeout(t); };
-  }, [audio]);
+  }, [audio, finishBoot]);
 
   useEffect(() => {
-    if (audio.ready) setBootDone(true);
-  }, [audio.ready]);
+    if (audio.ready) finishBoot();
+  }, [audio.ready, finishBoot]);
 
   // Mount the main UI only after the loader has fully faded out, so the
   // loader's centered "FLUTEVERSE" doesn't visually overlap the topbar's
