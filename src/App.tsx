@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
+import { Analytics } from '@vercel/analytics/react';
 import { Carousel } from './components/Carousel/Carousel';
 import { Hero } from './components/Hero/Hero';
 import { Loader } from './components/Loader';
@@ -137,6 +138,7 @@ export default function App() {
   return (
     <FluteProvider>
       <ToastProvider>
+        <Analytics />
         {/* Site-wide click sparks. The wrapper passes clicks through to the UI
             (the canvas is pointer-events:none); .spark-layer in global.css lifts
             the spark canvas above the app's fixed, opaque layers. */}
