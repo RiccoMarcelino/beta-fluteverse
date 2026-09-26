@@ -110,8 +110,10 @@ export function PlayOverlay() {
       return;
     }
     try {
-      await audio.start();
-      await session.start();
+      // Trigger camera session immediately on click event turn so browser prompts permissions instantly
+      const sessionPromise = session.start();
+      const audioPromise = audio.start();
+      await Promise.all([sessionPromise, audioPromise]);
     } catch (err) {
       console.error('Session start failed:', err);
     }

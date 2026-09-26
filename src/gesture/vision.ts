@@ -5,7 +5,7 @@ let _visionPromise: ReturnType<typeof FilesetResolver.forVisionTasks> | null = n
 export function getVision() {
   if (!_visionPromise) {
     _visionPromise = FilesetResolver.forVisionTasks(
-      'https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@0.10.35/wasm'
+      'https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@latest/wasm'
     );
   }
   return _visionPromise;

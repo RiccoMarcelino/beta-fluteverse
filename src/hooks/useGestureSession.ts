@@ -3,6 +3,7 @@ import type { Swara } from '../types';
 import { CONFIDENCE_THRESHOLD, NO_HAND_FRAMES, SWARAS } from '../constants';
 import { getRecognizer } from '../gesture/recognizer';
 import { drawCameraError, drawFaceMesh, drawHand, type Landmark } from '../gesture/drawHand';
+import { useIsMobile } from './useIsMobile';
 
 export interface GestureSessionArgs {
   canvasRef: React.RefObject<HTMLCanvasElement | null>;
@@ -166,24 +167,31 @@ export function useGestureSession(args: GestureSessionArgs): GestureSessionApi {
     }
   }, []);
 
+  const isMobile = useIsMobile();
+
   const start = useCallback(async () => {
     setError(null);
     try {
-      if (!recognizerRef.current) {
-        recognizerRef.current = await getRecognizer();
-      }
+      // Soft constraints only: ideal allows downscaling without throwing OverconstrainedError on portrait/unusual sensors
+      const videoConstraints: MediaTrackConstraints = isMobile
+        ? { width: { ideal: 640 }, height: { ideal: 480 }, facingMode: 'user' }
+        : { width: { ideal: 640 }, height: { ideal: 480 }, facingMode: 'user' };
 
-      // 640x480 resolution delivers optimal latency (~15-20ms) for MediaPipe vision models
-      const videoConstraints: MediaTrackConstraints = {
-        width: { ideal: 640, max: 1280 },
-        height: { ideal: 480, max: 720 },
-        facingMode: 'user',
-      };
-
-      const stream = await navigator.mediaDevices.getUserMedia({
+      // 1. Immediately request camera access on user gesture turn so the browser's permission prompt appears instantly!
+      const streamPromise = navigator.mediaDevices.getUserMedia({
         video: videoConstraints,
         audio: false,
       });
+
+      // 2. Concurrently ensure recognizer is loaded
+      const recognizerPromise = recognizerRef.current
+        ? Promise.resolve(recognizerRef.current)
+        : getRecognizer().then((r) => {
+            recognizerRef.current = r;
+            return r;
+          });
+
+      const stream = await streamPromise;
       streamRef.current = stream;
 
       let video = videoRef.current;
@@ -201,6 +209,8 @@ export function useGestureSession(args: GestureSessionArgs): GestureSessionApi {
         video.onerror = () => reject(new Error('video error'));
       });
       await video.play();
+
+      await recognizerPromise;
 
       noHandFramesRef.current = 0;
       lastSwaraRef.current = null;
