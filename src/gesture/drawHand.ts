@@ -55,12 +55,14 @@ export function drawHand(canvas: HTMLCanvasElement, landmarks: Landmark[]): void
 
   ctx.strokeStyle = 'rgba(255,255,255,0.6)';
   ctx.lineWidth = 1.5;
-  HAND_CONNECTIONS.forEach(([a, b]) => {
-    ctx.beginPath();
+  ctx.beginPath();
+  for (let i = 0; i < HAND_CONNECTIONS.length; i++) {
+    const [a, b] = HAND_CONNECTIONS[i];
+    if (!landmarks[a] || !landmarks[b]) continue;
     ctx.moveTo(landmarks[a].x * W, landmarks[a].y * H);
     ctx.lineTo(landmarks[b].x * W, landmarks[b].y * H);
-    ctx.stroke();
-  });
+  }
+  ctx.stroke();
 
   landmarks.forEach((lm, i) => {
     ctx.beginPath();
@@ -82,7 +84,7 @@ export function drawHand(canvas: HTMLCanvasElement, landmarks: Landmark[]): void
 
 /**
  * Draw full face mesh — all 478 landmarks + key contour connections.
- * Replaces the minimal drawLips() for full visualization.
+ * Batched for maximum performance.
  */
 export function drawFaceMesh(canvas: HTMLCanvasElement, landmarks: Landmark[]): void {
   if (!landmarks || landmarks.length < 400) return;
@@ -92,34 +94,45 @@ export function drawFaceMesh(canvas: HTMLCanvasElement, landmarks: Landmark[]): 
   const W = canvas.width;
   const H = canvas.height;
 
-  // Mesh connection lines
+  // 1. Mesh connection lines (single path stroke)
   ctx.strokeStyle = 'rgba(0, 255, 224, 0.22)';
   ctx.lineWidth = 0.8;
-  for (const [a, b] of FACE_MESH_CONNECTIONS) {
-    if (!landmarks[a] || !landmarks[b]) continue;
-    ctx.beginPath();
-    ctx.moveTo(landmarks[a].x * W, landmarks[a].y * H);
-    ctx.lineTo(landmarks[b].x * W, landmarks[b].y * H);
-    ctx.stroke();
+  ctx.beginPath();
+  for (let i = 0; i < FACE_MESH_CONNECTIONS.length; i++) {
+    const [a, b] = FACE_MESH_CONNECTIONS[i];
+    const la = landmarks[a];
+    const lb = landmarks[b];
+    if (!la || !lb) continue;
+    ctx.moveTo(la.x * W, la.y * H);
+    ctx.lineTo(lb.x * W, lb.y * H);
   }
+  ctx.stroke();
 
-  // All landmark dots — tiny, subtle
+  // 2. All landmark dots (single path fill)
   ctx.fillStyle = 'rgba(0, 255, 224, 0.45)';
+  ctx.beginPath();
   for (let i = 0; i < landmarks.length; i++) {
     const lm = landmarks[i];
-    ctx.beginPath();
-    ctx.arc(lm.x * W, lm.y * H, 1, 0, Math.PI * 2);
-    ctx.fill();
+    const x = lm.x * W;
+    const y = lm.y * H;
+    ctx.moveTo(x + 1, y);
+    ctx.arc(x, y, 1, 0, Math.PI * 2);
   }
+  ctx.fill();
 
-  // Highlight lip points used for blow intensity
+  // 3. Highlight lip points used for blow intensity (single path fill)
   ctx.fillStyle = '#00FFE0';
-  for (const i of LIP_HIGHLIGHT) {
-    if (!landmarks[i]) continue;
-    ctx.beginPath();
-    ctx.arc(landmarks[i].x * W, landmarks[i].y * H, 2.5, 0, Math.PI * 2);
-    ctx.fill();
+  ctx.beginPath();
+  for (let i = 0; i < LIP_HIGHLIGHT.length; i++) {
+    const idx = LIP_HIGHLIGHT[i];
+    const lm = landmarks[idx];
+    if (!lm) continue;
+    const x = lm.x * W;
+    const y = lm.y * H;
+    ctx.moveTo(x + 2.5, y);
+    ctx.arc(x, y, 2.5, 0, Math.PI * 2);
   }
+  ctx.fill();
 }
 
 export function drawCameraError(canvas: HTMLCanvasElement): void {

@@ -531,6 +531,21 @@ h3,
   overflow: hidden;
 }
 
+.canvas-wrapper.is-clickable {
+  cursor: pointer;
+  transition: border-color 0.2s ease, box-shadow 0.2s ease, transform 0.15s ease;
+}
+
+.canvas-wrapper.is-clickable:hover {
+  border-color: #00FFE0;
+  box-shadow: 6px 6px 0px #00FFE0;
+}
+
+.canvas-wrapper.is-clickable:active {
+  transform: translate(2px, 2px);
+  box-shadow: 2px 2px 0px #00FFE0;
+}
+
 .canvas-wrapper::before {
   content: '';
   position: absolute;

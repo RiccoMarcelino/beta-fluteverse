@@ -8,6 +8,9 @@ export default defineConfig({
     react(),
     basicSsl(), // self-signed HTTPS — needed so getUserMedia works on LAN devices
   ],
+  css: {
+    postcss: {},
+  },
   server: {
     host: true,       // listen on 0.0.0.0 — exposes to LAN so phone can connect
     port: 5173,

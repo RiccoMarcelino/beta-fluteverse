@@ -2,8 +2,7 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import type { Swara } from '../types';
 import { CONFIDENCE_THRESHOLD, NO_HAND_FRAMES, SWARAS } from '../constants';
 import { getRecognizer } from '../gesture/recognizer';
-import { drawCameraError, drawFaceMesh, drawHand } from '../gesture/drawHand';
-import { useIsMobile } from './useIsMobile';
+import { drawCameraError, drawFaceMesh, drawHand, type Landmark } from '../gesture/drawHand';
 
 export interface GestureSessionArgs {
   canvasRef: React.RefObject<HTMLCanvasElement | null>;
@@ -16,6 +15,9 @@ export interface GestureSessionArgs {
   onGestureLatency?(latency: number): void;
   /** Latest face landmarks from lip tracker — drawn each frame after the hand */
   faceLandmarksRef?: React.RefObject<Array<{ x: number; y: number; z: number }> | null>;
+  /** Lip tracking frame processor callback */
+  onLipProcess?(video: HTMLVideoElement, nowMs: number): void;
+  onLipReset?(): void;
 }
 
 export interface GestureSessionApi {
@@ -23,11 +25,9 @@ export interface GestureSessionApi {
   start(): Promise<void>;
   stop(): void;
   error: string | null;
-  videoElement: HTMLVideoElement | null;
 }
 
 export function useGestureSession(args: GestureSessionArgs): GestureSessionApi {
-  const isMobile = useIsMobile();
   const [isRunning, setIsRunning] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -36,24 +36,25 @@ export function useGestureSession(args: GestureSessionArgs): GestureSessionApi {
   const rafRef = useRef<number | null>(null);
   const runningRef = useRef(false);
   const lastInferenceRef = useRef(0);
+  const lastFaceInferenceRef = useRef(0);
   const lastTriggerRef = useRef(0);
   const lastSwaraRef = useRef<Swara | null>(null);
   const noHandFramesRef = useRef(0);
+  const lastHandLandmarksRef = useRef<Landmark[] | null>(null);
 
   // Stable refs for the latest callbacks
   const cbRef = useRef(args);
   cbRef.current = args;
 
+  const recognizerRef = useRef<Awaited<ReturnType<typeof getRecognizer>> | null>(null);
+
   const tick = useCallback((nowMs: number) => {
     rafRef.current = requestAnimationFrame(tick);
     if (!runningRef.current) return;
 
-    if (nowMs - lastInferenceRef.current < 33) return;
-    lastInferenceRef.current = nowMs;
-
     const canvas = cbRef.current.canvasRef.current;
     const video = videoRef.current;
-    if (!canvas || !video) return;
+    if (!canvas || !video || video.readyState < 2) return;
 
     if (video.videoWidth && video.videoHeight) {
       if (canvas.width !== video.videoWidth) canvas.width = video.videoWidth;
@@ -63,86 +64,107 @@ export function useGestureSession(args: GestureSessionArgs): GestureSessionApi {
     const ctx = canvas.getContext('2d');
     if (!ctx) return;
     ctx.clearRect(0, 0, canvas.width, canvas.height);
-    if (video.readyState >= 2) {
-      ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
-    }
+    ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
 
-    const recognizer = recognizerRef.current;
-    if (!recognizer) return;
-    
-    const inferenceStart = performance.now();
-    const results = recognizer.recognizeForVideo(video, nowMs);
-    const inferenceEnd = performance.now();
-    
-    cbRef.current.onGestureLatency?.(inferenceEnd - inferenceStart);
+    // Staggered model inference scheduling:
+    // Hand gesture recognition target: ~30 FPS (every 33ms)
+    // Face / Lip tracking target: ~15 FPS (every 66ms)
+    const gestureDue = nowMs - lastInferenceRef.current >= 33;
+    const faceDue = nowMs - lastFaceInferenceRef.current >= 66;
 
-    if (results.landmarks && results.landmarks.length > 0) {
-      noHandFramesRef.current = 0;
-      cbRef.current.onHandPresence(true);
-      // Draw face mesh first (underneath hand skeleton)
-      const faceLm = cbRef.current.faceLandmarksRef?.current;
-      if (faceLm) drawFaceMesh(canvas, faceLm);
-      drawHand(canvas, results.landmarks[0]);
+    let ranGesture = false;
 
-      const scores: Record<Swara, number> = { Sa:0, Re:0, Ga:0, Ma:0, Pa:0, Dha:0, Ni:0 };
-      let noneScore = 0;
-      if (results.gestures.length > 0) {
-        for (const g of results.gestures[0]) {
-          if (g.categoryName === 'None') {
-            noneScore = g.score;
-          } else if (g.categoryName in scores) {
-            scores[g.categoryName as Swara] = g.score;
+    if (gestureDue) {
+      lastInferenceRef.current = nowMs;
+      ranGesture = true;
+
+      const recognizer = recognizerRef.current;
+      if (recognizer) {
+        const inferenceStart = performance.now();
+        const results = recognizer.recognizeForVideo(video, nowMs);
+        const inferenceEnd = performance.now();
+        cbRef.current.onGestureLatency?.(inferenceEnd - inferenceStart);
+
+        if (results.landmarks && results.landmarks.length > 0) {
+          noHandFramesRef.current = 0;
+          lastHandLandmarksRef.current = results.landmarks[0] as Landmark[];
+          cbRef.current.onHandPresence(true);
+
+          const scores: Record<Swara, number> = { Sa: 0, Re: 0, Ga: 0, Ma: 0, Pa: 0, Dha: 0, Ni: 0 };
+          let noneScore = 0;
+          if (results.gestures.length > 0) {
+            for (const g of results.gestures[0]) {
+              if (g.categoryName === 'None') {
+                noneScore = g.score;
+              } else if (g.categoryName in scores) {
+                scores[g.categoryName as Swara] = g.score;
+              }
+            }
           }
-        }
-      }
-      cbRef.current.onScores(scores, noneScore);
+          cbRef.current.onScores(scores, noneScore);
 
-      if (results.gestures.length > 0 && results.gestures[0].length > 0) {
-        const top = results.gestures[0][0];
-        const label = top.categoryName;
+          if (results.gestures.length > 0 && results.gestures[0].length > 0) {
+            const top = results.gestures[0][0];
+            const label = top.categoryName;
 
-        // If None is the top result OR has significant score, treat as silence
-        const noneIsTop = label === 'None' && top.score >= CONFIDENCE_THRESHOLD;
-        const noneIsSignificant = noneScore >= 0.30; // None competing = ambiguous = silence
+            // If None is the top result OR has significant score, treat as silence
+            const noneIsTop = label === 'None' && top.score >= CONFIDENCE_THRESHOLD;
+            const noneIsSignificant = noneScore >= 0.3; // None competing = ambiguous = silence
 
-        if (noneIsTop || noneIsSignificant) {
-          if (lastSwaraRef.current) {
-            cbRef.current.onAllRelease();
-            lastSwaraRef.current = null;
+            if (noneIsTop || noneIsSignificant) {
+              if (lastSwaraRef.current) {
+                cbRef.current.onAllRelease();
+                lastSwaraRef.current = null;
+              }
+            } else {
+              const swaraLabel = label as Swara;
+              const now = Date.now();
+              if (
+                top.score >= CONFIDENCE_THRESHOLD &&
+                SWARAS.includes(swaraLabel) &&
+                swaraLabel !== lastSwaraRef.current &&
+                now - lastTriggerRef.current >= cbRef.current.cooldownMs
+              ) {
+                const prev = lastSwaraRef.current;
+                if (prev) cbRef.current.onSwaraEnd(prev);
+                lastSwaraRef.current = swaraLabel;
+                lastTriggerRef.current = now;
+                cbRef.current.onSwaraStart(swaraLabel);
+              }
+            }
           }
         } else {
-          const swaraLabel = label as Swara;
-          const now = Date.now();
-          if (
-            top.score >= CONFIDENCE_THRESHOLD &&
-            SWARAS.includes(swaraLabel) &&
-            swaraLabel !== lastSwaraRef.current &&
-            now - lastTriggerRef.current >= cbRef.current.cooldownMs
-          ) {
-            const prev = lastSwaraRef.current;
-            if (prev) cbRef.current.onSwaraEnd(prev);
-            lastSwaraRef.current = swaraLabel;
-            lastTriggerRef.current = now;
-            cbRef.current.onSwaraStart(swaraLabel);
+          noHandFramesRef.current += 1;
+          if (noHandFramesRef.current >= NO_HAND_FRAMES) {
+            lastHandLandmarksRef.current = null;
+            cbRef.current.onHandPresence(false);
+            if (lastSwaraRef.current) {
+              cbRef.current.onAllRelease();
+              lastSwaraRef.current = null;
+            }
           }
         }
       }
-    } else {
-      noHandFramesRef.current += 1;
-      // Still draw face mesh even when no hand present
-      const faceLm = cbRef.current.faceLandmarksRef?.current;
-      if (faceLm && canvas) drawFaceMesh(canvas, faceLm);
-      if (noHandFramesRef.current >= NO_HAND_FRAMES) {
-        cbRef.current.onHandPresence(false);
-        if (lastSwaraRef.current) {
-          cbRef.current.onAllRelease();
-          lastSwaraRef.current = null;
-        }
-      }
+    }
+
+    // Only run face detection on ticks where gesture did NOT run,
+    // ensuring both models never compete on the same frame.
+    if (!ranGesture && faceDue && cbRef.current.onLipProcess) {
+      lastFaceInferenceRef.current = nowMs;
+      cbRef.current.onLipProcess(video, nowMs);
+    }
+
+    // Draw face mesh underneath hand skeleton
+    const faceLm = cbRef.current.faceLandmarksRef?.current;
+    if (faceLm) {
+      drawFaceMesh(canvas, faceLm);
+    }
+
+    // Draw hand skeleton
+    if (lastHandLandmarksRef.current) {
+      drawHand(canvas, lastHandLandmarksRef.current);
     }
   }, []);
-
-  const recognizerRef = useRef<Awaited<ReturnType<typeof getRecognizer>> | null>(null);
 
   const start = useCallback(async () => {
     setError(null);
@@ -151,9 +173,12 @@ export function useGestureSession(args: GestureSessionArgs): GestureSessionApi {
         recognizerRef.current = await getRecognizer();
       }
 
-      const videoConstraints: MediaTrackConstraints = isMobile
-        ? { width: { ideal: 640 }, height: { ideal: 480 }, facingMode: 'user' }
-        : { width: { ideal: 1280 }, height: { ideal: 720 }, facingMode: 'user' };
+      // 640x480 resolution delivers optimal latency (~15-20ms) for MediaPipe vision models
+      const videoConstraints: MediaTrackConstraints = {
+        width: { ideal: 640, max: 1280 },
+        height: { ideal: 480, max: 720 },
+        facingMode: 'user',
+      };
 
       const stream = await navigator.mediaDevices.getUserMedia({
         video: videoConstraints,
@@ -179,7 +204,10 @@ export function useGestureSession(args: GestureSessionArgs): GestureSessionApi {
 
       noHandFramesRef.current = 0;
       lastSwaraRef.current = null;
+      lastHandLandmarksRef.current = null;
       lastTriggerRef.current = 0;
+      lastInferenceRef.current = 0;
+      lastFaceInferenceRef.current = 0;
       runningRef.current = true;
       setIsRunning(true);
       if (rafRef.current == null) {
@@ -192,13 +220,13 @@ export function useGestureSession(args: GestureSessionArgs): GestureSessionApi {
       setError(err instanceof Error ? err.message : String(err));
       throw err;
     }
-  }, [isMobile, tick]);
+  }, [tick]);
 
   const stop = useCallback(() => {
     runningRef.current = false;
     setIsRunning(false);
     if (streamRef.current) {
-      streamRef.current.getTracks().forEach(t => t.stop());
+      streamRef.current.getTracks().forEach((t) => t.stop());
       streamRef.current = null;
     }
     if (videoRef.current) videoRef.current.srcObject = null;
@@ -207,9 +235,11 @@ export function useGestureSession(args: GestureSessionArgs): GestureSessionApi {
       rafRef.current = null;
     }
     cbRef.current.onAllRelease();
+    cbRef.current.onLipReset?.();
     lastSwaraRef.current = null;
+    lastHandLandmarksRef.current = null;
     noHandFramesRef.current = 0;
-    cbRef.current.onScores({ Sa:0, Re:0, Ga:0, Ma:0, Pa:0, Dha:0, Ni:0 }, 0);
+    cbRef.current.onScores({ Sa: 0, Re: 0, Ga: 0, Ma: 0, Pa: 0, Dha: 0, Ni: 0 }, 0);
     cbRef.current.onHandPresence(false);
     const canvas = cbRef.current.canvasRef.current;
     if (canvas) {
@@ -219,8 +249,10 @@ export function useGestureSession(args: GestureSessionArgs): GestureSessionApi {
   }, []);
 
   useEffect(() => {
-    return () => { stop(); };
+    return () => {
+      stop();
+    };
   }, [stop]);
 
-  return { isRunning, start, stop, error, videoElement: videoRef.current };
+  return { isRunning, start, stop, error };
 }

@@ -1,35 +1,43 @@
-import { useEffect, useRef, useState } from 'react';
-import { initFaceLandmarker, detectLipOpennessWithLandmarks, BlowIntensitySmoothing } from '../gesture/lipTracker';
+import { useCallback, useEffect, useRef, useState } from 'react';
+import {
+  initFaceLandmarker,
+  detectLipOpennessWithLandmarks,
+  resetLipTracker,
+  BlowIntensitySmoothing,
+} from '../gesture/lipTracker';
 
 export interface LipTrackingApi {
   intensity: number;
   ready: boolean;
   enabled: boolean;
-  landmarks: Array<{ x: number; y: number; z: number }> | null;
+  processFrame(video: HTMLVideoElement, nowMs: number): void;
+  reset(): void;
 }
 
 interface UseLipTrackingArgs {
-  videoRef: React.RefObject<HTMLVideoElement | null>;
-  isRunning: boolean;
   faceLandmarksRef?: React.RefObject<Array<{ x: number; y: number; z: number }> | null>;
   onIntensityChange?: (intensity: number) => void;
   onFaceLatency?: (latency: number) => void;
 }
 
-export function useLipTracking({ videoRef, isRunning, faceLandmarksRef, onIntensityChange, onFaceLatency }: UseLipTrackingArgs): LipTrackingApi {
+export function useLipTracking({
+  faceLandmarksRef,
+  onIntensityChange,
+  onFaceLatency,
+}: UseLipTrackingArgs): LipTrackingApi {
   const [ready, setReady] = useState(false);
   const [enabled, setEnabled] = useState(false);
   const [intensity, setIntensity] = useState(0.5);
-  const [landmarks, setLandmarks] = useState<Array<{ x: number; y: number; z: number }> | null>(null);
-  
+
   const smoothingRef = useRef(new BlowIntensitySmoothing());
-  const rafRef = useRef<number | null>(null);
-  const lastTimestampRef = useRef(0);
+  const missedFramesRef = useRef(0);
+  const lastUiUpdateRef = useRef(0);
+  const lastIntensityRef = useRef(0.5);
 
   // Initialize face landmarker on mount
   useEffect(() => {
     let cancelled = false;
-    
+
     initFaceLandmarker().then((landmarker) => {
       if (cancelled) return;
       setReady(true);
@@ -41,75 +49,75 @@ export function useLipTracking({ videoRef, isRunning, faceLandmarksRef, onIntens
     };
   }, []);
 
-  // Lip tracking loop
-  useEffect(() => {
-    if (!isRunning || !enabled || !ready) {
-      if (rafRef.current) {
-        cancelAnimationFrame(rafRef.current);
-        rafRef.current = null;
-      }
-      return;
-    }
+  const reset = useCallback(() => {
+    smoothingRef.current.reset();
+    missedFramesRef.current = 0;
+    resetLipTracker();
+    setIntensity(0.5);
+    lastIntensityRef.current = 0.5;
+    if (faceLandmarksRef) faceLandmarksRef.current = null;
+    onIntensityChange?.(0.5);
+  }, [faceLandmarksRef, onIntensityChange]);
 
-    const tick = (nowMs: number) => {
-      rafRef.current = requestAnimationFrame(tick);
-
-      const video = videoRef.current;
-      if (!video || video.readyState < 2) return;
-
-      // Throttle to ~30fps
-      if (nowMs - lastTimestampRef.current < 33) return;
-      
-      // Add small offset to avoid timestamp collision with gesture recognizer
-      const faceTs = nowMs + 0.1;
-      if (faceTs <= lastTimestampRef.current) return;
-      
-      lastTimestampRef.current = faceTs;
+  const processFrame = useCallback(
+    (video: HTMLVideoElement, nowMs: number) => {
+      if (!enabled || !ready) return;
 
       const inferenceStart = performance.now();
-      const result = detectLipOpennessWithLandmarks(video, faceTs);
+      const result = detectLipOpennessWithLandmarks(video, nowMs);
       const inferenceEnd = performance.now();
-      
+
       if (result) {
+        missedFramesRef.current = 0;
         onFaceLatency?.(inferenceEnd - inferenceStart);
         const smoothed = smoothingRef.current.update(result.intensity);
-        setIntensity(smoothed);
-        setLandmarks(result.landmarks);
-        if (faceLandmarksRef) faceLandmarksRef.current = result.landmarks;
+
+        // Update audio engine immediately without React render delay
         onIntensityChange?.(smoothed);
+
+        if (faceLandmarksRef) {
+          faceLandmarksRef.current = result.landmarks;
+        }
+
+        // Throttle React state update to avoid re-rendering entire tree every frame
+        const now = performance.now();
+        if (
+          Math.abs(smoothed - lastIntensityRef.current) >= 0.02 ||
+          now - lastUiUpdateRef.current >= 100
+        ) {
+          lastIntensityRef.current = smoothed;
+          lastUiUpdateRef.current = now;
+          setIntensity(smoothed);
+        }
       } else {
+        missedFramesRef.current += 1;
         const smoothed = smoothingRef.current.update(null);
-        setIntensity(smoothed);
-        setLandmarks(null);
-        if (faceLandmarksRef) faceLandmarksRef.current = null;
         onIntensityChange?.(smoothed);
+
+        // Only clear landmarks after 10 consecutive missed frames to avoid mesh flicker
+        if (missedFramesRef.current > 10) {
+          if (faceLandmarksRef) faceLandmarksRef.current = null;
+        }
+
+        const now = performance.now();
+        if (
+          Math.abs(smoothed - lastIntensityRef.current) >= 0.02 ||
+          now - lastUiUpdateRef.current >= 100
+        ) {
+          lastIntensityRef.current = smoothed;
+          lastUiUpdateRef.current = now;
+          setIntensity(smoothed);
+        }
       }
-    };
-
-    rafRef.current = requestAnimationFrame(tick);
-
-    return () => {
-      if (rafRef.current) {
-        cancelAnimationFrame(rafRef.current);
-        rafRef.current = null;
-      }
-    };
-  }, [isRunning, enabled, ready, videoRef, onIntensityChange]);
-
-  // Reset on stop
-  useEffect(() => {
-    if (!isRunning) {
-      smoothingRef.current.reset();
-      setIntensity(0.5);
-      setLandmarks(null);
-      onIntensityChange?.(0.5);
-    }
-  }, [isRunning, onIntensityChange]);
+    },
+    [enabled, ready, onFaceLatency, onIntensityChange, faceLandmarksRef],
+  );
 
   return {
     intensity,
     ready,
     enabled,
-    landmarks,
+    processFrame,
+    reset,
   };
 }

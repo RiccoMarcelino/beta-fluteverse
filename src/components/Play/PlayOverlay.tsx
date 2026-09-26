@@ -5,6 +5,8 @@ import { useAudioEngine } from '../../hooks/useAudioEngine';
 import { useGestureSession } from '../../hooks/useGestureSession';
 import { useLipTracking } from '../../hooks/useLipTracking';
 import { usePerformanceStats } from '../../hooks/usePerformanceStats';
+import { getGestureDevice } from '../../gesture/recognizer';
+import { getFaceDevice } from '../../gesture/lipTracker';
 import { MobileGate } from '../MobileGate';
 import { GradientText } from '../ui/GradientText';
 import DecryptedText from '../ui/DecryptedText';
@@ -15,7 +17,7 @@ import { GestureCanvas } from './GestureCanvas';
 import { SideRays } from './SideRays';
 import { SwaraStrip } from './SwaraStrip';
 
-const EMPTY_SCORES: Record<Swara, number> = { Sa:0, Re:0, Ga:0, Ma:0, Pa:0, Dha:0, Ni:0 };
+const EMPTY_SCORES: Record<Swara, number> = { Sa: 0, Re: 0, Ga: 0, Ma: 0, Pa: 0, Dha: 0, Ni: 0 };
 
 export function PlayOverlay() {
   const { selected, playOpen, closePlay, audioMode } = useFlute();
@@ -34,13 +36,28 @@ export function PlayOverlay() {
   // Shared ref for face landmarks — written by lip tracker, read by gesture tick
   const faceLandmarksRef = useRef<Array<{ x: number; y: number; z: number }> | null>(null);
 
-  // Video ref for lip tracking
-  const videoRef = useRef<HTMLVideoElement | null>(null);
+  // Performance monitoring
+  const [isRunningForPerf, setIsRunningForPerf] = useState(false);
+  const performanceStats = usePerformanceStats(isRunningForPerf);
+  const lastScoreUpdateRef = useRef(0);
+
+  // Lip tracking for blow intensity — writes face landmarks to shared ref for rendering
+  const lipTracking = useLipTracking({
+    faceLandmarksRef,
+    onIntensityChange: (intensity) => {
+      audio.setBlowIntensity(intensity);
+    },
+    onFaceLatency: (latency) => {
+      performanceStats.recordFaceLatency(latency);
+    },
+  });
 
   const session = useGestureSession({
     canvasRef,
     cooldownMs,
     faceLandmarksRef,
+    onLipProcess: lipTracking.processFrame,
+    onLipReset: lipTracking.reset,
     onSwaraStart(swara) {
       setActiveSwara(swara);
       audio.trigger(fluteRef.current, swara);
@@ -53,12 +70,19 @@ export function PlayOverlay() {
       setActiveSwara(null);
     },
     onScores(s, none) {
+      const now = performance.now();
+      if (now - lastScoreUpdateRef.current < 50) return;
+      lastScoreUpdateRef.current = now;
+
       setScores(s);
       setNoneScore(Math.round(none * 100));
       let max: Swara | null = null;
       let maxVal = 0;
       (Object.entries(s) as [Swara, number][]).forEach(([k, v]) => {
-        if (v > maxVal) { maxVal = v; max = k; }
+        if (v > maxVal) {
+          maxVal = v;
+          max = k;
+        }
       });
       setTopSwara(maxVal > 0 ? max : null);
     },
@@ -68,34 +92,17 @@ export function PlayOverlay() {
     },
   });
 
-  // Performance monitoring
-  const performanceStats = usePerformanceStats(session.isRunning);
-
-  // Update video ref when session has video
   useEffect(() => {
-    videoRef.current = session.videoElement;
-  }, [session.videoElement]);
+    setIsRunningForPerf(session.isRunning);
+  }, [session.isRunning]);
 
-  // Update performance tracking when session state changes
+  // Update performance tracking devices when session state changes
   useEffect(() => {
     if (session.isRunning) {
-      performanceStats.setGestureDevice('GPU'); // Assuming GPU for gesture
-      performanceStats.setFaceDevice('GPU'); // Assuming GPU for face
+      performanceStats.setGestureDevice(getGestureDevice());
+      performanceStats.setFaceDevice(getFaceDevice());
     }
   }, [session.isRunning, performanceStats]);
-
-  // Lip tracking for blow intensity — writes face landmarks to shared ref for rendering
-  const lipTracking = useLipTracking({
-    videoRef,
-    isRunning: session.isRunning,
-    faceLandmarksRef,
-    onIntensityChange: (intensity) => {
-      audio.setBlowIntensity(intensity);
-    },
-    onFaceLatency: (latency) => {
-      performanceStats.recordFaceLatency(latency);
-    },
-  });
 
   const handleStartStop = useCallback(async () => {
     if (session.isRunning) {
@@ -106,9 +113,16 @@ export function PlayOverlay() {
       await audio.start();
       await session.start();
     } catch (err) {
-      console.error(err);
+      console.error('Session start failed:', err);
     }
   }, [session, audio]);
+
+  // Clicking on the canvas area requests camera permissions and starts session if not running
+  const handleCanvasClick = useCallback(() => {
+    if (!session.isRunning) {
+      handleStartStop();
+    }
+  }, [session.isRunning, handleStartStop]);
 
   // Stop session when overlay closes
   useEffect(() => {
@@ -120,7 +134,9 @@ export function PlayOverlay() {
   // ESC + swipe-down to close
   useEffect(() => {
     if (!playOpen) return;
-    const onKey = (e: KeyboardEvent) => { if (e.key === 'Escape') closePlay(); };
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') closePlay();
+    };
     window.addEventListener('keydown', onKey);
     return () => window.removeEventListener('keydown', onKey);
   }, [playOpen, closePlay]);
@@ -143,7 +159,12 @@ export function PlayOverlay() {
         role="button"
         tabIndex={0}
         onClick={closePlay}
-        onKeyDown={e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); closePlay(); } }}
+        onKeyDown={(e) => {
+          if (e.key === 'Enter' || e.key === ' ') {
+            e.preventDefault();
+            closePlay();
+          }
+        }}
       >
         ← BACK
       </div>
@@ -176,6 +197,8 @@ export function PlayOverlay() {
           promptLine2={prompt.line2}
           performanceMetrics={performanceStats.metrics}
           showPerformance={session.isRunning}
+          isClickable={!session.isRunning}
+          onClick={handleCanvasClick}
         />
         <div className="play-grid-right">
           <ConfidencePanel scores={scores} top={topSwara} noneScore={noneScore} />

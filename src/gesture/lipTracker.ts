@@ -1,10 +1,21 @@
-import type { FaceLandmarker, FaceLandmarkerResult } from '@mediapipe/tasks-vision';
+import { FaceLandmarker, type FaceLandmarkerResult } from '@mediapipe/tasks-vision';
+import { getVision } from './vision';
 
 const FACE_MODEL_URL =
   'https://storage.googleapis.com/mediapipe-models/face_landmarker/face_landmarker/float16/1/face_landmarker.task';
 
 let _faceLandmarker: FaceLandmarker | null = null;
 let _initPromise: Promise<FaceLandmarker | null> | null = null;
+let _faceDevice: 'GPU' | 'CPU' = 'GPU';
+let _lastDetectTimestamp = -1;
+
+export function getFaceDevice(): 'GPU' | 'CPU' {
+  return _faceDevice;
+}
+
+export function resetLipTracker(): void {
+  _lastDetectTimestamp = -1;
+}
 
 /**
  * Initialize Face Landmarker for lip tracking
@@ -15,27 +26,35 @@ export async function initFaceLandmarker(): Promise<FaceLandmarker | null> {
 
   _initPromise = (async () => {
     try {
-      const { FaceLandmarker, FilesetResolver } = await import('@mediapipe/tasks-vision');
-      
-      const vision = await FilesetResolver.forVisionTasks(
-        'https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@0.10.14/wasm'
-      );
+      const vision = await getVision();
 
-      _faceLandmarker = await FaceLandmarker.createFromOptions(vision, {
+      const baseOpts = {
         baseOptions: {
           modelAssetPath: FACE_MODEL_URL,
-          delegate: 'GPU',
+          delegate: 'GPU' as const,
         },
-        runningMode: 'VIDEO',
+        runningMode: 'VIDEO' as const,
         numFaces: 1,
         minFaceDetectionConfidence: 0.5,
         minFacePresenceConfidence: 0.5,
         minTrackingConfidence: 0.5,
         outputFaceBlendshapes: false,
         outputFacialTransformationMatrixes: false,
-      });
+      };
 
-      console.log('[FluteVerse] Face Landmarker loaded for lip tracking.');
+      try {
+        _faceLandmarker = await FaceLandmarker.createFromOptions(vision, baseOpts);
+        _faceDevice = 'GPU';
+      } catch (gpuErr) {
+        console.warn('[FluteVerse] Face Landmarker GPU delegate failed, falling back to CPU:', gpuErr);
+        _faceLandmarker = await FaceLandmarker.createFromOptions(vision, {
+          ...baseOpts,
+          baseOptions: { ...baseOpts.baseOptions, delegate: 'CPU' as const },
+        });
+        _faceDevice = 'CPU';
+      }
+
+      console.log(`[FluteVerse] Face Landmarker loaded for lip tracking (${_faceDevice}).`);
       return _faceLandmarker;
     } catch (err) {
       console.warn('[FluteVerse] Face Landmarker failed to load. Blow intensity disabled.', err);
@@ -99,6 +118,11 @@ export function detectLipOpennessWithLandmarks(
 ): { intensity: number; landmarks: Array<{ x: number; y: number; z: number }> } | null {
   if (!_faceLandmarker) return null;
 
+  if (timestampMs <= _lastDetectTimestamp) {
+    timestampMs = _lastDetectTimestamp + 1;
+  }
+  _lastDetectTimestamp = timestampMs;
+
   try {
     const results: FaceLandmarkerResult = _faceLandmarker.detectForVideo(video, timestampMs);
     
@@ -108,7 +132,7 @@ export function detectLipOpennessWithLandmarks(
       return { intensity, landmarks };
     }
   } catch (err) {
-    // Timestamp conflict - skip this frame silently
+    // Return null if detection fails
     return null;
   }
 

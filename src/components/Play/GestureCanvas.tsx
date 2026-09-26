@@ -8,12 +8,37 @@ interface Props {
   promptLine2?: string;
   performanceMetrics?: PerformanceMetrics;
   showPerformance?: boolean;
+  isClickable?: boolean;
+  onClick?: () => void;
 }
 
 export const GestureCanvas = forwardRef<HTMLCanvasElement, Props>(
-  function GestureCanvas({ showPrompt, promptLine1, promptLine2, performanceMetrics, showPerformance }, ref) {
+  function GestureCanvas(
+    {
+      showPrompt,
+      promptLine1,
+      promptLine2,
+      performanceMetrics,
+      showPerformance,
+      isClickable,
+      onClick,
+    },
+    ref,
+  ) {
     return (
-      <div className="canvas-wrapper">
+      <div
+        className={`canvas-wrapper${isClickable ? ' is-clickable' : ''}`}
+        onClick={onClick}
+        role={isClickable ? 'button' : undefined}
+        tabIndex={isClickable ? 0 : undefined}
+        aria-label={isClickable ? 'Click to start camera and enable gesture tracking' : undefined}
+        onKeyDown={(e) => {
+          if (isClickable && (e.key === 'Enter' || e.key === ' ')) {
+            e.preventDefault();
+            onClick?.();
+          }
+        }}
+      >
         <canvas id="gestureCanvas" ref={ref} />
         {showPrompt && (
           <div className="canvas-no-hand">

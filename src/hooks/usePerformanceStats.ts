@@ -39,6 +39,7 @@ export function usePerformanceStats(isRunning: boolean) {
     }
 
     let rafId: number;
+    let lastUiUpdate = 0;
     const tick = (now: number) => {
       if (lastFrameTimeRef.current > 0) {
         const frameDelta = now - lastFrameTimeRef.current;
@@ -49,10 +50,11 @@ export function usePerformanceStats(isRunning: boolean) {
           frameTimesRef.current.shift();
         }
 
-        // Calculate average FPS
-        if (frameTimesRef.current.length > 0) {
+        // Update UI metrics every 400ms instead of every single frame
+        if (now - lastUiUpdate >= 400 && frameTimesRef.current.length > 0) {
+          lastUiUpdate = now;
           const avgFrameTime = frameTimesRef.current.reduce((a, b) => a + b, 0) / frameTimesRef.current.length;
-          const fps = 1000 / avgFrameTime;
+          const fps = Math.min(60, 1000 / (avgFrameTime || 16.6));
 
           // Calculate average latencies
           const avgGestureLatency = gestureTimesRef.current.length > 0
