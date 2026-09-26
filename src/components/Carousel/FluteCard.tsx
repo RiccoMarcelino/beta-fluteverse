@@ -2,6 +2,7 @@ import { useEffect, useRef } from 'react';
 import { animate, motion, useMotionValue, useSpring, useTransform } from 'motion/react';
 import type { Flute } from '../../types';
 import { FLUTE_IMAGE } from '../../constants';
+import { useToast } from '../ui/Toast';
 
 const TILT_AMPLITUDE = 12;
 const HOVER_SCALE = 1.05;
@@ -30,6 +31,7 @@ export function FluteCard({
   onActivate,
 }: Props) {
   const ref = useRef<HTMLElement | null>(null);
+  const toast = useToast();
   const baseScale = active ? 1.08 : 1;
 
   // Mouse-driven tilt — composed with the carousel's base rotateY so cards
@@ -75,7 +77,36 @@ export function FluteCard({
     scale.set(baseScale);
   }
 
-  const handle = active ? () => onActivate() : undefined;
+  // Pointer drag vs click disambiguation & double-trigger prevention
+  const pointerStartRef = useRef<{ x: number; y: number; time: number } | null>(null);
+  const lastActivateRef = useRef(0);
+
+  const triggerActivate = () => {
+    const now = Date.now();
+    if (now - lastActivateRef.current < 350) return;
+    lastActivateRef.current = now;
+    if (active) {
+      onActivate();
+    } else {
+      toast.show(`${flute.name} — COMING SOON`);
+    }
+  };
+
+  const handlePointerDown = (e: React.PointerEvent) => {
+    pointerStartRef.current = { x: e.clientX, y: e.clientY, time: Date.now() };
+  };
+
+  const handlePointerUp = (e: React.PointerEvent) => {
+    if (!pointerStartRef.current) return;
+    const dx = Math.abs(e.clientX - pointerStartRef.current.x);
+    const dy = Math.abs(e.clientY - pointerStartRef.current.y);
+    const dt = Date.now() - pointerStartRef.current.time;
+    pointerStartRef.current = null;
+    // If movement was minimal (<15px) and short (<500ms), treat as click
+    if (dx < 15 && dy < 15 && dt < 500) {
+      triggerActivate();
+    }
+  };
 
   return (
     <motion.article
@@ -87,20 +118,24 @@ export function FluteCard({
         translateZ,
         scale,
         y: floatY,
-        cursor: active ? 'pointer' : 'default',
+        cursor: 'pointer',
         ['--img-rotate' as string]: imageRotate,
       } as unknown as React.CSSProperties}
       data-key={flute.key}
-      tabIndex={active ? 0 : -1}
-      role={active ? 'button' : undefined}
+      tabIndex={0}
+      role="button"
       aria-disabled={active ? undefined : true}
       aria-label={active ? `Play ${flute.name}` : `${flute.name} — coming soon`}
-      onClick={handle}
+      onClick={(e) => {
+        e.stopPropagation();
+        triggerActivate();
+      }}
+      onPointerDown={handlePointerDown}
+      onPointerUp={handlePointerUp}
       onKeyDown={(e) => {
-        if (!active) return;
         if (e.key === 'Enter' || e.key === ' ') {
           e.preventDefault();
-          onActivate();
+          triggerActivate();
         }
       }}
       onMouseMove={handleMouseMove}
@@ -108,7 +143,13 @@ export function FluteCard({
       onMouseLeave={handleMouseLeave}
     >
       <div className="flute-image-wrap">
-        <img src={FLUTE_IMAGE[flute.key]} alt={flute.name} loading="eager" decoding="async" />
+        <img
+          src={FLUTE_IMAGE[flute.key]}
+          alt={flute.name}
+          loading="eager"
+          decoding="async"
+          draggable={false}
+        />
       </div>
       <h3 className="card-name">{flute.name}</h3>
       <div className="root-note">{flute.root}</div>

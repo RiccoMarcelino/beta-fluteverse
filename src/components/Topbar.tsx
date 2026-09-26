@@ -3,9 +3,10 @@ import FuzzyText from './ui/FuzzyText';
 interface Props {
   onBrandClick(): void;
   onNavClick(target: string): void;
+  hideAbout?: boolean;
 }
 
-export function Topbar({ onBrandClick, onNavClick }: Props) {
+export function Topbar({ onBrandClick, onNavClick, hideAbout = false }: Props) {
   return (
     <header className="topbar">
       <div
@@ -38,10 +39,12 @@ export function Topbar({ onBrandClick, onNavClick }: Props) {
       <nav className="nav" aria-label="Primary navigation">
         <a
           data-target="carousel"
-          onClick={() => onNavClick('carousel')}
-          onKeyDown={e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); onNavClick('carousel'); } }}
+          className={`nav-about-link${hideAbout ? ' nav-about-link--hidden' : ''}`}
+          onClick={() => { if (!hideAbout) onNavClick('carousel'); }}
+          onKeyDown={e => { if ((e.key === 'Enter' || e.key === ' ') && !hideAbout) { e.preventDefault(); onNavClick('carousel'); } }}
           role="button"
-          tabIndex={0}
+          tabIndex={hideAbout ? -1 : 0}
+          aria-hidden={hideAbout}
         >
           ABOUT
         </a>

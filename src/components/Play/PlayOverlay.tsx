@@ -16,6 +16,7 @@ import { ControlsRow } from './ControlsRow';
 import { GestureCanvas } from './GestureCanvas';
 import { SideRays } from './SideRays';
 import { SwaraStrip } from './SwaraStrip';
+import { TutorialModal } from './TutorialModal';
 
 const EMPTY_SCORES: Record<Swara, number> = { Sa: 0, Re: 0, Ga: 0, Ma: 0, Pa: 0, Dha: 0, Ni: 0 };
 
@@ -30,6 +31,7 @@ export function PlayOverlay() {
   const [activeSwara, setActiveSwara] = useState<Swara | null>(null);
   const [cooldownMs, setCooldownMs] = useState(300);
   const [hasHand, setHasHand] = useState(false);
+  const [showTutorial, setShowTutorial] = useState(false);
   const fluteRef = useRef(selected);
   fluteRef.current = selected;
 
@@ -171,6 +173,15 @@ export function PlayOverlay() {
         ← BACK
       </div>
 
+      <button
+        type="button"
+        className="play-tutorial-btn"
+        onClick={() => setShowTutorial(true)}
+        aria-label="Open gesture tutorial"
+      >
+        ? TUTORIAL
+      </button>
+
       <div className="play-header">
         <span className="play-title">
           <GradientText colors={['#ffffff', '#00FFE0', '#a0a0a0', '#ffffff']} speed={4}>
@@ -225,6 +236,11 @@ export function PlayOverlay() {
       />
 
       <SwaraStrip active={activeSwara} noneActive={!activeSwara && noneScore > 50} />
+
+      <TutorialModal
+        isOpen={showTutorial}
+        onClose={() => setShowTutorial(false)}
+      />
     </div>
   );
 }

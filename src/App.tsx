@@ -60,6 +60,23 @@ function Shell() {
     sectionCount: 2,
   });
 
+  const [hideAbout, setHideAbout] = useState(false);
+
+  useEffect(() => {
+    const container = containerRef.current;
+    if (!container) return;
+
+    const onScroll = () => {
+      const threshold = Math.min(250, window.innerWidth * 0.25);
+      const isPast = container.scrollLeft > threshold;
+      setHideAbout(prev => (prev !== isPast ? isPast : prev));
+    };
+
+    container.addEventListener('scroll', onScroll, { passive: true });
+    onScroll();
+    return () => container.removeEventListener('scroll', onScroll);
+  }, []);
+
   return (
     <>
       <Loader done={bootDone} />
@@ -76,6 +93,7 @@ function Shell() {
       <Topbar
         onBrandClick={() => scrollToSection('hero')}
         onNavClick={id => scrollToSection(id)}
+        hideAbout={hideAbout}
       />
 
       <RoadmapLink />

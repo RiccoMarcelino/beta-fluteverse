@@ -265,10 +265,23 @@ h3,
   cursor: pointer;
 }
 
-.nav a[data-target="carousel"] {
+.nav a[data-target="carousel"],
+.nav-about-link {
   font-family: 'Doto', monospace;
   font-weight: 600;
   letter-spacing: 2px;
+  display: inline-block;
+  opacity: 1;
+  transform: translateY(0);
+  transition: opacity 0.35s cubic-bezier(0.23, 1, 0.32, 1),
+              transform 0.35s cubic-bezier(0.23, 1, 0.32, 1);
+  pointer-events: auto;
+}
+
+.nav-about-link--hidden {
+  opacity: 0 !important;
+  transform: translateY(-8px) scale(0.95) !important;
+  pointer-events: none !important;
 }
 
 .hero-text {
@@ -388,13 +401,21 @@ h3,
   border: 1px solid #222222;
   color: var(--cream);
   cursor: pointer;
-  transform: rotateY(var(--rotate-y)) translateZ(var(--translate-z)) scale(var(--scale));
   transform-style: preserve-3d;
-  transition: transform 0.4s cubic-bezier(0.23, 1, 0.32, 1),
-              box-shadow 0.4s cubic-bezier(0.23, 1, 0.32, 1),
-              opacity 0.4s ease,
-              filter 0.4s ease,
-              border-color 0.4s ease;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.5);
+  transition: box-shadow 0.3s ease,
+              opacity 0.3s ease,
+              filter 0.3s ease,
+              border-color 0.3s ease;
+  user-select: none;
+  -webkit-user-select: none;
+}
+
+.flute-card * {
+  pointer-events: none;
+  user-select: none;
+  -webkit-user-select: none;
+  -webkit-user-drag: none;
 }
 
 /* Middle 3 cards (D, C#, E) sit slightly spaced apart so the active card
@@ -406,15 +427,14 @@ h3,
 }
 
 .flute-card.active {
-  --scale: 1.08;
   border-color: #444444;
   box-shadow: 0 0 40px rgba(0, 255, 224, 0.08), 4px 4px 0px rgba(0, 255, 224, 0.3);
   z-index: 4;
 }
 
 .flute-card.active:hover {
-  transform: rotateY(0deg) translateZ(20px) scale(1.1);
-  box-shadow: 0 0 60px rgba(0, 255, 224, 0.15), 4px 4px 0px rgba(0, 255, 224, 0.3);
+  border-color: #00FFE0;
+  box-shadow: 0 0 60px rgba(0, 255, 224, 0.25), 4px 4px 0px rgba(0, 255, 224, 0.5);
 }
 
 .flute-image-wrap {
@@ -490,6 +510,29 @@ h3,
 
 .play-back-btn:hover {
   background: #fff;
+  color: #000;
+  box-shadow: none;
+}
+
+.play-tutorial-btn {
+  position: absolute;
+  top: 20px;
+  right: 40px;
+  font-family: 'Space Grotesk', sans-serif;
+  font-size: 13px;
+  color: #00FFE0;
+  cursor: pointer;
+  border: 2px solid #00FFE0;
+  padding: 6px 14px;
+  box-shadow: 3px 3px 0px #00FFE0;
+  letter-spacing: 1px;
+  z-index: 10;
+  background: rgba(0, 255, 224, 0.05);
+  transition: all 120ms ease;
+}
+
+.play-tutorial-btn:hover {
+  background: #00FFE0;
   color: #000;
   box-shadow: none;
 }
